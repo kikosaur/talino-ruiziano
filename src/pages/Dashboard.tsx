@@ -3,15 +3,22 @@ import WelcomeCard from "@/components/dashboard/WelcomeCard";
 import BadgeGallery from "@/components/dashboard/BadgeGallery";
 import QuickActions from "@/components/dashboard/QuickActions";
 import RecentActivity from "@/components/dashboard/RecentActivity";
+import { useAuth } from "@/contexts/AuthContext";
+import { Loader2 } from "lucide-react";
 
 const Dashboard = () => {
-  // Mock student data - would come from auth/database
-  const studentData = {
-    name: "Juan Dela Cruz",
-    points: 750,
-    streak: 5,
-    level: 3,
-  };
+  const { profile, isLoading } = useAuth();
+
+  if (isLoading || !profile) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-12 h-12 text-accent animate-spin" />
+          <p className="text-muted-foreground">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -22,10 +29,10 @@ const Dashboard = () => {
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Welcome Section */}
           <WelcomeCard
-            studentName={studentData.name}
-            points={studentData.points}
-            streak={studentData.streak}
-            level={studentData.level}
+            studentName={profile.display_name || "Student"}
+            points={profile.total_points}
+            streak={profile.streak_days}
+            level={profile.level}
           />
 
           {/* Main Grid */}

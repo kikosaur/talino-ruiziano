@@ -6,6 +6,8 @@ import SuccessModal from "@/components/dashboard/SuccessModal";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSubmissions } from "@/hooks/useSubmissions";
 
 interface UploadedFile {
   file: File;
@@ -29,6 +31,9 @@ const iltOptions = [
 ];
 
 const SubmitILT = () => {
+  const { profile, refreshProfile } = useAuth();
+  const { submitILT } = useSubmissions();
+  
   const [selectedILT, setSelectedILT] = useState("");
   const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -36,8 +41,9 @@ const SubmitILT = () => {
   const [showConfetti, setShowConfetti] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState("");
-  const [currentPoints, setCurrentPoints] = useState(750);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const currentPoints = profile?.total_points || 0;
 
   const handleFileSelect = useCallback((file: File) => {
     setError("");
@@ -108,14 +114,22 @@ const SubmitILT = () => {
     setIsSubmitting(true);
     setError("");
 
-    // Simulate upload delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    const iltName = iltOptions.find(ilt => ilt.id === selectedILT)?.name || selectedILT;
+    const result = await submitILT(iltName, uploadedFile.file);
+
+    setIsSubmitting(false);
+
+    if (!result.success) {
+      setError(result.error || "Failed to submit ILT");
+      return;
+    }
+
+    // Refresh profile to get updated points
+    await refreshProfile();
 
     // Success!
-    setIsSubmitting(false);
     setShowConfetti(true);
     setShowSuccess(true);
-    setCurrentPoints(prev => prev + 50);
   };
 
   const handleSuccessClose = () => {
@@ -141,7 +155,7 @@ const SubmitILT = () => {
         onClose={handleSuccessClose}
         fileName={uploadedFile?.file.name || ""}
         pointsEarned={50}
-        newTotal={currentPoints}
+        newTotal={currentPoints + 50}
       />
 
       <main className="ml-20 lg:ml-64 p-6 lg:p-8 transition-all duration-300">

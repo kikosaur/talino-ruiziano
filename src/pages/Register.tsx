@@ -1,31 +1,52 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { BookOpen, Mail, Lock, ArrowRight } from "lucide-react";
+import { BookOpen, Mail, Lock, User, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
-const Login = () => {
+const Register = () => {
+  const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signIn, isAdmin } = useAuth();
+  const { signUp } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (password !== confirmPassword) {
+      toast({
+        title: "Passwords don't match",
+        description: "Please make sure your passwords match.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 6 characters.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     
-    const { error } = await signIn(email, password);
+    const { error } = await signUp(email, password, displayName);
     
     setIsLoading(false);
 
     if (error) {
       toast({
-        title: "Login failed",
+        title: "Registration failed",
         description: error.message,
         variant: "destructive",
       });
@@ -33,11 +54,9 @@ const Login = () => {
     }
 
     toast({
-      title: "Welcome back! 🎓",
-      description: "You've been successfully logged in.",
+      title: "Welcome to Talino-Ruiziano! 🎓",
+      description: "Your account has been created successfully.",
     });
-    
-    // Navigate based on role (isAdmin will be updated after auth state change)
     navigate("/dashboard");
   };
 
@@ -59,7 +78,7 @@ const Login = () => {
               Talino-Ruiziano
             </h1>
             <p className="text-primary-foreground/80 text-lg max-w-md mx-auto">
-              Your gamified learning journey awaits. Earn points, unlock badges, 
+              Join our gamified learning community! Earn points, unlock badges, 
               and excel in your studies!
             </p>
           </div>
@@ -79,7 +98,7 @@ const Login = () => {
         </div>
       </div>
 
-      {/* Right side - Login form */}
+      {/* Right side - Register form */}
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md space-y-8">
           {/* Mobile logo */}
@@ -97,14 +116,32 @@ const Login = () => {
           <div className="card-elevated p-8 space-y-6">
             <div className="text-center space-y-2">
               <h2 className="text-2xl font-serif font-bold text-foreground">
-                Welcome Back! 👋
+                Create Your Account 🎉
               </h2>
               <p className="text-muted-foreground">
-                Sign in to continue your learning journey
+                Start your gamified learning journey today
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="displayName" className="text-foreground font-medium">
+                  Display Name
+                </Label>
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    id="displayName"
+                    type="text"
+                    placeholder="Juan Dela Cruz"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    className="input-warm pl-12"
+                    required
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-foreground font-medium">
                   Email Address
@@ -141,14 +178,22 @@ const Login = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between text-sm">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" className="rounded border-border" />
-                  <span className="text-muted-foreground">Remember me</span>
-                </label>
-                <a href="#" className="text-primary hover:underline font-medium">
-                  Forgot password?
-                </a>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword" className="text-foreground font-medium">
+                  Confirm Password
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="input-warm pl-12"
+                    required
+                  />
+                </div>
               </div>
 
               <Button 
@@ -157,10 +202,10 @@ const Login = () => {
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <span className="animate-pulse">Signing in...</span>
+                  <span className="animate-pulse">Creating account...</span>
                 ) : (
                   <>
-                    Log In
+                    Sign Up
                     <ArrowRight className="w-5 h-5" />
                   </>
                 )}
@@ -168,9 +213,9 @@ const Login = () => {
             </form>
 
             <p className="text-center text-muted-foreground">
-              Don't have an account?{" "}
-              <Link to="/register" className="text-primary hover:underline font-medium">
-                Sign up
+              Already have an account?{" "}
+              <Link to="/login" className="text-primary hover:underline font-medium">
+                Log in
               </Link>
             </p>
           </div>
@@ -186,4 +231,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Register;

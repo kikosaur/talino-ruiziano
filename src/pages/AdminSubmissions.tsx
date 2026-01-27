@@ -1,18 +1,49 @@
-import { FileText, Users, Trophy, Clock } from "lucide-react";
+import { FileText, Users, Trophy, Clock, Loader2 } from "lucide-react";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import SubmissionsTable from "@/components/admin/SubmissionsTable";
-import { mockSubmissions, Submission, formatDate } from "@/data/mockSubmissions";
+import { useSubmissions, Submission } from "@/hooks/useSubmissions";
 import { useToast } from "@/hooks/use-toast";
+
+// Adapter to convert our Submission type to the table's expected format
+interface TableSubmission {
+  id: string;
+  studentName: string;
+  studentEmail: string;
+  iltName: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  submittedAt: Date;
+  status: "pending" | "reviewed" | "graded";
+  pointsAwarded: number;
+  grade?: string;
+}
 
 const AdminSubmissions = () => {
   const { toast } = useToast();
+  const { submissions, isLoading } = useSubmissions(true);
+
+  // Transform submissions to match table component format
+  const tableSubmissions: TableSubmission[] = submissions.map((s) => ({
+    id: s.id,
+    studentName: s.student_name || "Unknown Student",
+    studentEmail: s.student_email || "",
+    iltName: s.ilt_name,
+    fileName: s.file_name,
+    fileType: s.file_type,
+    fileSize: s.file_size,
+    submittedAt: new Date(s.submitted_at),
+    status: s.status,
+    pointsAwarded: s.points_awarded,
+    grade: s.grade || undefined,
+  }));
 
   // Calculate stats
   const stats = {
-    totalSubmissions: mockSubmissions.length,
-    pendingReview: mockSubmissions.filter(s => s.status === "pending").length,
-    totalStudents: new Set(mockSubmissions.map(s => s.studentEmail)).size,
-    totalPoints: mockSubmissions.reduce((sum, s) => sum + s.pointsAwarded, 0),
+    totalSubmissions: tableSubmissions.length,
+    pendingReview: tableSubmissions.filter(s => s.status === "pending").length,
+    totalStudents: new Set(submissions.map(s => s.user_id)).size,
+    totalPoints: tableSubmissions.reduce((sum, s) => sum + s.pointsAwarded, 0),
   };
 
   const exportToCSV = () => {
@@ -29,7 +60,7 @@ const AdminSubmissions = () => {
       "Grade",
     ];
 
-    const rows = mockSubmissions.map((s) => [
+    const rows = tableSubmissions.map((s) => [
       s.studentName,
       s.studentEmail,
       s.iltName,
@@ -61,9 +92,23 @@ const AdminSubmissions = () => {
 
     toast({
       title: "Export Successful! 📊",
-      description: `Exported ${mockSubmissions.length} submissions to CSV.`,
+      description: `Exported ${tableSubmissions.length} submissions to CSV.`,
     });
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <AdminSidebar />
+        <main className="ml-20 lg:ml-64 p-6 lg:p-8 flex items-center justify-center min-h-screen">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="w-12 h-12 text-accent animate-spin" />
+            <p className="text-muted-foreground">Loading submissions...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -125,7 +170,7 @@ const AdminSubmissions = () => {
 
           {/* Submissions table */}
           <SubmissionsTable 
-            submissions={mockSubmissions} 
+            submissions={tableSubmissions} 
             onExportCSV={exportToCSV} 
           />
         </div>

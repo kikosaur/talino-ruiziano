@@ -8,11 +8,12 @@ import {
   BookOpen,
   ChevronLeft,
   ChevronRight,
-  Download
+  Home
 } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Overview", path: "/admin" },
@@ -25,6 +26,13 @@ const menuItems = [
 const AdminSidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut, profile } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/");
+  };
 
   return (
     <aside 
@@ -50,6 +58,14 @@ const AdminSidebar = () => {
         </Link>
       </div>
 
+      {/* User info */}
+      {!collapsed && profile && (
+        <div className="px-4 py-3 border-b border-background/20">
+          <p className="text-sm font-medium truncate text-background">{profile.display_name || "Admin"}</p>
+          <p className="text-xs text-background/60 truncate">{profile.email}</p>
+        </div>
+      )}
+
       {/* Navigation */}
       <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto">
         {menuItems.map((item) => {
@@ -72,6 +88,17 @@ const AdminSidebar = () => {
             </Link>
           );
         })}
+
+        {/* Back to Dashboard link */}
+        <Link
+          to="/dashboard"
+          className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:bg-background/10 text-background/80 mt-4 border-t border-background/10 pt-4"
+        >
+          <Home className="w-5 h-5 flex-shrink-0" />
+          {!collapsed && (
+            <span className="font-medium truncate">Student Dashboard</span>
+          )}
+        </Link>
       </nav>
 
       {/* Bottom section */}
@@ -90,13 +117,13 @@ const AdminSidebar = () => {
           )}
         </button>
         
-        <Link
-          to="/"
-          className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-destructive/20 transition-all text-background/70 hover:text-background"
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-destructive/20 transition-all text-background/70 hover:text-background"
         >
           <LogOut className="w-5 h-5 flex-shrink-0" />
           {!collapsed && <span className="font-medium">Log Out</span>}
-        </Link>
+        </button>
       </div>
     </aside>
   );
