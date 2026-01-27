@@ -9,11 +9,13 @@ import {
   LogOut,
   BookOpen,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Shield
 } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
@@ -28,6 +30,13 @@ const menuItems = [
 const DashboardSidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut, isAdmin, profile } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/");
+  };
 
   return (
     <aside 
@@ -49,6 +58,22 @@ const DashboardSidebar = () => {
           )}
         </Link>
       </div>
+
+      {/* User info */}
+      {!collapsed && profile && (
+        <div className="px-4 py-3 border-b border-primary-foreground/20">
+          <p className="text-sm font-medium truncate">{profile.display_name || "Student"}</p>
+          <p className="text-xs text-primary-foreground/60 truncate">{profile.email}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded-full">
+              {profile.total_points} pts
+            </span>
+            <span className="text-xs bg-primary-foreground/10 px-2 py-0.5 rounded-full">
+              Level {profile.level}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Navigation */}
       <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto">
@@ -72,6 +97,24 @@ const DashboardSidebar = () => {
             </Link>
           );
         })}
+
+        {/* Admin link - only show for admins */}
+        {isAdmin && (
+          <Link
+            to="/admin"
+            className={cn(
+              "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
+              location.pathname.startsWith("/admin")
+                ? "bg-accent text-accent-foreground shadow-[var(--shadow-gold)]" 
+                : "hover:bg-primary-foreground/10"
+            )}
+          >
+            <Shield className="w-5 h-5 flex-shrink-0" />
+            {!collapsed && (
+              <span className="font-medium truncate">Admin Panel</span>
+            )}
+          </Link>
+        )}
       </nav>
 
       {/* Bottom section */}
@@ -90,13 +133,13 @@ const DashboardSidebar = () => {
           )}
         </button>
         
-        <Link
-          to="/"
-          className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-destructive/20 transition-all text-primary-foreground/70 hover:text-primary-foreground"
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-destructive/20 transition-all text-primary-foreground/70 hover:text-primary-foreground"
         >
           <LogOut className="w-5 h-5 flex-shrink-0" />
           {!collapsed && <span className="font-medium">Log Out</span>}
-        </Link>
+        </button>
       </div>
     </aside>
   );

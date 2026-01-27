@@ -1,20 +1,34 @@
 import { Link } from "react-router-dom";
-import { FileText, Users, BarChart3, ArrowRight, Trophy, Clock } from "lucide-react";
+import { FileText, Users, BarChart3, ArrowRight, Trophy, Clock, Loader2 } from "lucide-react";
 import AdminSidebar from "@/components/admin/AdminSidebar";
-import { mockSubmissions } from "@/data/mockSubmissions";
+import { useSubmissions } from "@/hooks/useSubmissions";
 
 const AdminDashboard = () => {
-  // Calculate stats
+  const { submissions, isLoading } = useSubmissions(true);
+
+  // Calculate stats from real submissions
   const stats = {
-    totalSubmissions: mockSubmissions.length,
-    pendingReview: mockSubmissions.filter(s => s.status === "pending").length,
-    totalStudents: new Set(mockSubmissions.map(s => s.studentEmail)).size,
-    gradedCount: mockSubmissions.filter(s => s.status === "graded").length,
+    totalSubmissions: submissions.length,
+    pendingReview: submissions.filter(s => s.status === "pending").length,
+    totalStudents: new Set(submissions.map(s => s.user_id)).size,
+    gradedCount: submissions.filter(s => s.status === "graded").length,
   };
 
-  const recentSubmissions = mockSubmissions
-    .sort((a, b) => b.submittedAt.getTime() - a.submittedAt.getTime())
-    .slice(0, 5);
+  const recentSubmissions = submissions.slice(0, 5);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <AdminSidebar />
+        <main className="ml-20 lg:ml-64 p-6 lg:p-8 flex items-center justify-center min-h-screen">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="w-12 h-12 text-accent animate-spin" />
+            <p className="text-muted-foreground">Loading dashboard...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -132,38 +146,45 @@ const AdminDashboard = () => {
               </Link>
             </div>
             
-            <div className="space-y-3">
-              {recentSubmissions.map((submission) => (
-                <div
-                  key={submission.id}
-                  className="flex items-center justify-between p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-accent/20 rounded-xl flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-accent" />
+            {recentSubmissions.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No submissions yet</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {recentSubmissions.map((submission) => (
+                  <div
+                    key={submission.id}
+                    className="flex items-center justify-between p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-accent/20 rounded-xl flex items-center justify-center">
+                        <FileText className="w-5 h-5 text-accent" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">{submission.student_name || "Student"}</p>
+                        <p className="text-sm text-muted-foreground">{submission.ilt_name}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-foreground">{submission.studentName}</p>
-                      <p className="text-sm text-muted-foreground">{submission.iltName}</p>
+                    <div className="text-right">
+                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                        submission.status === "graded" 
+                          ? "bg-green-500/20 text-green-700"
+                          : submission.status === "reviewed"
+                          ? "bg-secondary/20 text-secondary"
+                          : "bg-accent/20 text-accent-foreground"
+                      }`}>
+                        {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
+                      </span>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(submission.submitted_at))}
+                      </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                      submission.status === "graded" 
-                        ? "bg-green-500/20 text-green-700"
-                        : submission.status === "reviewed"
-                        ? "bg-secondary/20 text-secondary"
-                        : "bg-accent/20 text-accent-foreground"
-                    }`}>
-                      {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
-                    </span>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(submission.submittedAt)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </main>
