@@ -1,7 +1,7 @@
 import { FileText, Users, Trophy, Clock, Loader2 } from "lucide-react";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import SubmissionsTable from "@/components/admin/SubmissionsTable";
-import { useSubmissions, Submission } from "@/hooks/useSubmissions";
+import { useSubmissions } from "@/hooks/useSubmissions";
 import { useToast } from "@/hooks/use-toast";
 
 // Adapter to convert our Submission type to the table's expected format
@@ -21,7 +21,7 @@ interface TableSubmission {
 
 const AdminSubmissions = () => {
   const { toast } = useToast();
-  const { submissions, isLoading } = useSubmissions(true);
+  const { submissions, isLoading, updateSubmissionStatus } = useSubmissions(true);
 
   // Transform submissions to match table component format
   const tableSubmissions: TableSubmission[] = submissions.map((s) => ({
@@ -94,6 +94,14 @@ const AdminSubmissions = () => {
       title: "Export Successful! 📊",
       description: `Exported ${tableSubmissions.length} submissions to CSV.`,
     });
+  };
+
+  const handleUpdateSubmission = async (
+    submissionId: string,
+    status: "pending" | "reviewed" | "graded",
+    grade?: string
+  ) => {
+    return updateSubmissionStatus(submissionId, status, grade);
   };
 
   if (isLoading) {
@@ -171,7 +179,8 @@ const AdminSubmissions = () => {
           {/* Submissions table */}
           <SubmissionsTable 
             submissions={tableSubmissions} 
-            onExportCSV={exportToCSV} 
+            onExportCSV={exportToCSV}
+            onUpdateSubmission={handleUpdateSubmission}
           />
         </div>
       </main>

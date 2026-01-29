@@ -10,7 +10,11 @@ import {
   Eye,
   CheckCircle,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Edit3,
+  Save,
+  X,
+  Loader2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -21,12 +25,40 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Submission, formatFileSize, formatDate } from "@/data/mockSubmissions";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+
+interface Submission {
+  id: string;
+  studentName: string;
+  studentEmail: string;
+  iltName: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  submittedAt: Date;
+  status: "pending" | "reviewed" | "graded";
+  pointsAwarded: number;
+  grade?: string;
+}
 
 interface SubmissionsTableProps {
   submissions: Submission[];
   onExportCSV: () => void;
+  onUpdateSubmission?: (
+    submissionId: string,
+    status: "pending" | "reviewed" | "graded",
+    grade?: string
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 type SortField = "studentName" | "iltName" | "submittedAt" | "status";
@@ -50,12 +82,40 @@ const statusConfig = {
   },
 };
 
-const SubmissionsTable = ({ submissions, onExportCSV }: SubmissionsTableProps) => {
+const gradeOptions = ["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D", "F"];
+
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+};
+
+const formatDate = (date: Date): string => {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+};
+
+const SubmissionsTable = ({ submissions, onExportCSV, onUpdateSubmission }: SubmissionsTableProps) => {
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [iltFilter, setIltFilter] = useState<string>("all");
   const [sortField, setSortField] = useState<SortField>("submittedAt");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  
+  // Grading modal state
+  const [isGradingModalOpen, setIsGradingModalOpen] = useState(false);
+  const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
+  const [editingStatus, setEditingStatus] = useState<"pending" | "reviewed" | "graded">("pending");
+  const [editingGrade, setEditingGrade] = useState<string>("");
+  const [isSaving, setIsSaving] = useState(false);
 
   // Get unique ILT names for filter
   const iltOptions = useMemo(() => {
@@ -117,6 +177,48 @@ const SubmissionsTable = ({ submissions, onExportCSV }: SubmissionsTableProps) =
     } else {
       setSortField(field);
       setSortDirection("asc");
+    }
+  };
+
+  const openGradingModal = (submission: Submission) => {
+    setSelectedSubmission(submission);
+    setEditingStatus(submission.status);
+    setEditingGrade(submission.grade || "");
+    setIsGradingModalOpen(true);
+  };
+
+  const handleSaveGrade = async () => {
+    if (!selectedSubmission || !onUpdateSubmission) return;
+    
+    setIsSaving(true);
+    try {
+      const result = await onUpdateSubmission(
+        selectedSubmission.id,
+        editingStatus,
+        editingGrade || undefined
+      );
+      
+      if (result.success) {
+        toast({
+          title: "Submission Updated! ✅",
+          description: `${selectedSubmission.studentName}'s submission has been updated.`,
+        });
+        setIsGradingModalOpen(false);
+      } else {
+        toast({
+          title: "Update Failed",
+          description: result.error || "Failed to update submission",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -231,6 +333,9 @@ const SubmissionsTable = ({ submissions, onExportCSV }: SubmissionsTableProps) =
                 <th className="px-4 py-3 text-left font-semibold text-foreground">
                   Grade
                 </th>
+                <th className="px-4 py-3 text-left font-semibold text-foreground">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -312,6 +417,17 @@ const SubmissionsTable = ({ submissions, onExportCSV }: SubmissionsTableProps) =
                         <span className="text-muted-foreground text-sm">—</span>
                       )}
                     </td>
+                    <td className="px-4 py-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openGradingModal(submission)}
+                        className="flex items-center gap-1.5"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        Grade
+                      </Button>
+                    </td>
                   </tr>
                 );
               })}
@@ -327,6 +443,108 @@ const SubmissionsTable = ({ submissions, onExportCSV }: SubmissionsTableProps) =
           </div>
         )}
       </div>
+
+      {/* Grading Modal */}
+      <Dialog open={isGradingModalOpen} onOpenChange={setIsGradingModalOpen}>
+        <DialogContent className="sm:max-w-md bg-card">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit3 className="w-5 h-5 text-accent" />
+              Grade Submission
+            </DialogTitle>
+            <DialogDescription>
+              Update the status and assign a grade for this submission.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedSubmission && (
+            <div className="space-y-6 py-4">
+              {/* Student Info */}
+              <div className="bg-muted/30 rounded-lg p-4 space-y-2">
+                <p className="font-medium text-foreground">{selectedSubmission.studentName}</p>
+                <p className="text-sm text-muted-foreground">{selectedSubmission.studentEmail}</p>
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium">Assignment:</span> {selectedSubmission.iltName}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium">File:</span> {selectedSubmission.fileName}
+                </p>
+              </div>
+
+              {/* Status Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select value={editingStatus} onValueChange={(v) => setEditingStatus(v as typeof editingStatus)}>
+                  <SelectTrigger id="status" className="input-warm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border">
+                    <SelectItem value="pending">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        Pending
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="reviewed">
+                      <div className="flex items-center gap-2">
+                        <Eye className="w-4 h-4" />
+                        Reviewed
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="graded">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4" />
+                        Graded
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Grade Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="grade">Grade (Optional)</Label>
+                <Select value={editingGrade} onValueChange={setEditingGrade}>
+                  <SelectTrigger id="grade" className="input-warm">
+                    <SelectValue placeholder="Select a grade" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border">
+                    <SelectItem value="">No Grade</SelectItem>
+                    {gradeOptions.map((grade) => (
+                      <SelectItem key={grade} value={grade}>
+                        {grade}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsGradingModalOpen(false)}
+              disabled={isSaving}
+            >
+              <X className="w-4 h-4 mr-1" />
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveGrade}
+              disabled={isSaving}
+              className="btn-gold"
+            >
+              {isSaving ? (
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4 mr-1" />
+              )}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
