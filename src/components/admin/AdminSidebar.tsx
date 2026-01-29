@@ -9,7 +9,8 @@ import {
   ChevronRight,
   Home,
   Calendar,
-  MessageCircle
+  MessageCircle,
+  HelpCircle
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -22,6 +23,7 @@ const menuItems = [
   { icon: Calendar, label: "Deadlines", path: "/admin/deadlines" },
   { icon: Users, label: "Students", path: "/admin/students" },
   { icon: BarChart3, label: "Analytics", path: "/admin/analytics" },
+  { icon: HelpCircle, label: "How to Use", path: "/admin/guide" },
   { icon: Settings, label: "Settings", path: "/admin/settings" },
 ];
 

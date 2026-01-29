@@ -160,16 +160,87 @@ const StudentSettings = () => {
                                             {/* Avatar Options */}
                                             <div className="flex-1">
                                                 <p className="text-sm text-muted-foreground mb-3">Choose an avatar:</p>
-                                                <div className="flex flex-wrap gap-3">
+
+                                                {/* Single Avatar Grid */}
+                                                <div className="flex flex-wrap gap-3 max-h-96 overflow-y-auto pr-2">
                                                     {[
-                                                        "Felix", "Aneka", "Zoe", "Jack", "Bailey", "Midnight"
-                                                    ].map((seed) => {
-                                                        const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`;
+                                                        // People
+                                                        { style: "avataaars", seed: "Felix" },
+                                                        { style: "avataaars", seed: "Aneka" },
+                                                        { style: "avataaars", seed: "Zoe" },
+                                                        { style: "avataaars", seed: "Jack" },
+                                                        { style: "avataaars", seed: "Bailey" },
+                                                        { style: "avataaars", seed: "Midnight" },
+                                                        { style: "avataaars", seed: "Harper" },
+                                                        { style: "avataaars", seed: "Oliver" },
+                                                        { style: "avataaars", seed: "Emma" },
+                                                        { style: "avataaars", seed: "Liam" },
+                                                        { style: "avataaars", seed: "Sophia" },
+                                                        { style: "avataaars", seed: "Noah" },
+                                                        { style: "avataaars", seed: "Ava" },
+                                                        { style: "avataaars", seed: "Ethan" },
+                                                        { style: "avataaars", seed: "Mia" },
+                                                        { style: "avataaars", seed: "Lucas" },
+                                                        { style: "avataaars", seed: "Isabella" },
+                                                        { style: "avataaars", seed: "Mason" },
+                                                        // Robots
+                                                        { style: "bottts", seed: "Bolt" },
+                                                        { style: "bottts", seed: "Sparky" },
+                                                        { style: "bottts", seed: "Gizmo" },
+                                                        { style: "bottts", seed: "Widget" },
+                                                        { style: "bottts", seed: "Chip" },
+                                                        { style: "bottts", seed: "Circuit" },
+                                                        { style: "bottts", seed: "Byte" },
+                                                        { style: "bottts", seed: "Pixel" },
+                                                        { style: "bottts", seed: "Nano" },
+                                                        { style: "bottts", seed: "Turbo" },
+                                                        { style: "bottts", seed: "Echo" },
+                                                        { style: "bottts", seed: "Nova" },
+                                                        { style: "bottts", seed: "Atlas" },
+                                                        { style: "bottts", seed: "Zenith" },
+                                                        { style: "bottts", seed: "Pulsar" },
+                                                        { style: "bottts", seed: "Quasar" },
+                                                        // Pixel Art
+                                                        { style: "pixel-art", seed: "Mario" },
+                                                        { style: "pixel-art", seed: "Luigi" },
+                                                        { style: "pixel-art", seed: "Peach" },
+                                                        { style: "pixel-art", seed: "Zelda" },
+                                                        { style: "pixel-art", seed: "Link" },
+                                                        { style: "pixel-art", seed: "Sonic" },
+                                                        { style: "pixel-art", seed: "Pac" },
+                                                        { style: "pixel-art", seed: "Kirby" },
+                                                        { style: "pixel-art", seed: "Yoshi" },
+                                                        { style: "pixel-art", seed: "Pikachu" },
+                                                        { style: "pixel-art", seed: "Pika" },
+                                                        { style: "pixel-art", seed: "Squirtle" },
+                                                        { style: "pixel-art", seed: "Bulbasaur" },
+                                                        { style: "pixel-art", seed: "Charmander" },
+                                                        { style: "pixel-art", seed: "Eevee" },
+                                                        { style: "pixel-art", seed: "Jigglypuff" },
+                                                        // Fun Emoji
+                                                        { style: "fun-emoji", seed: "happy" },
+                                                        { style: "fun-emoji", seed: "cool" },
+                                                        { style: "fun-emoji", seed: "smile" },
+                                                        { style: "fun-emoji", seed: "wink" },
+                                                        { style: "fun-emoji", seed: "laugh" },
+                                                        { style: "fun-emoji", seed: "party" },
+                                                        { style: "fun-emoji", seed: "love" },
+                                                        { style: "fun-emoji", seed: "star" },
+                                                        { style: "fun-emoji", seed: "fire" },
+                                                        { style: "fun-emoji", seed: "rocket" },
+                                                        { style: "fun-emoji", seed: "sparkle" },
+                                                        { style: "fun-emoji", seed: "rainbow" },
+                                                        { style: "fun-emoji", seed: "sunny" },
+                                                        { style: "fun-emoji", seed: "moon" },
+                                                        { style: "fun-emoji", seed: "cloud" },
+                                                        { style: "fun-emoji", seed: "heart" },
+                                                    ].map((avatar, index) => {
+                                                        const avatarUrl = `https://api.dicebear.com/7.x/${avatar.style}/svg?seed=${avatar.seed}`;
                                                         const isSelected = profile?.avatar_url === avatarUrl;
 
                                                         return (
                                                             <button
-                                                                key={seed}
+                                                                key={`${avatar.style}-${avatar.seed}-${index}`}
                                                                 type="button"
                                                                 onClick={async () => {
                                                                     if (!user) return;
@@ -180,12 +251,12 @@ const StudentSettings = () => {
 
                                                                     if (!error) {
                                                                         await refreshProfile();
-                                                                        toast({ title: "Avatar Updated", description: "Looking good!" });
+                                                                        toast({ title: "Avatar Updated", description: "Looking great! ✨" });
                                                                     }
                                                                 }}
-                                                                className={`w-12 h-12 rounded-full overflow-hidden border-2 transition-all hover:scale-110 ${isSelected ? "border-accent ring-2 ring-accent/30" : "border-transparent hover:border-primary/30"}`}
+                                                                className={`w-12 h-12 rounded-full overflow-hidden border-2 transition-all hover:scale-110 ${isSelected ? "border-accent ring-2 ring-accent/30 scale-110" : "border-transparent hover:border-primary/30"}`}
                                                             >
-                                                                <img src={avatarUrl} alt={seed} className="w-full h-full object-cover" />
+                                                                <img src={avatarUrl} alt={avatar.seed} className="w-full h-full object-cover" />
                                                             </button>
                                                         );
                                                     })}

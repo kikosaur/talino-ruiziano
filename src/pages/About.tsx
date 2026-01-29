@@ -124,96 +124,65 @@ const About = () => {
                 </div>
             </section>
 
-            {/* Mission & Vision */}
-            <section className="py-16">
-                <div className="container mx-auto px-4">
-                    <div className="grid md:grid-cols-2 gap-8">
-                        {/* Mission */}
-                        <div className="card-elevated p-8">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-12 h-12 bg-accent/20 rounded-xl flex items-center justify-center">
-                                    <Target className="w-6 h-6 text-accent" />
-                                </div>
-                                <h2 className="text-2xl font-serif font-bold text-foreground">
-                                    Our Mission
-                                </h2>
-                            </div>
-                            <p className="text-muted-foreground leading-relaxed">
-                                To provide quality education that develops holistic, competent, and values-driven
-                                individuals who are prepared to meet the challenges of the 21st century. We are
-                                committed to fostering a culture of excellence, innovation, and lifelong learning
-                                through engaging and student-centered approaches.
-                            </p>
-                        </div>
-
-                        {/* Vision */}
-                        <div className="card-elevated p-8">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center">
-                                    <Eye className="w-6 h-6 text-primary" />
-                                </div>
-                                <h2 className="text-2xl font-serif font-bold text-foreground">
-                                    Our Vision
-                                </h2>
-                            </div>
-                            <p className="text-muted-foreground leading-relaxed">
-                                To be a leading educational institution recognized for academic excellence,
-                                innovative teaching practices, and the development of globally competitive
-                                graduates who are morally upright, socially responsible, and dedicated to
-                                nation-building.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Stats */}
-            <section className="py-12 bg-primary">
-                <div className="container mx-auto px-4">
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                        {stats.map((stat) => (
-                            <div key={stat.label} className="text-center">
-                                <div className="w-14 h-14 bg-accent rounded-xl flex items-center justify-center mx-auto mb-3 shadow-[var(--shadow-gold)]">
-                                    <stat.icon className="w-7 h-7 text-accent-foreground" />
-                                </div>
-                                <p className="text-3xl font-bold text-primary-foreground">{stat.value}</p>
-                                <p className="text-primary-foreground/70 text-sm">{stat.label}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* Core Values */}
+            {/* Creators Section */}
             <section className="py-16">
                 <div className="container mx-auto px-4">
                     <div className="text-center mb-12">
                         <h2 className="text-3xl font-serif font-bold text-foreground mb-2">
-                            Our Core Values
+                            Meet the Creators
                         </h2>
                         <p className="text-muted-foreground max-w-2xl mx-auto">
-                            The principles that guide everything we do at Talino-Ruiziano
+                            The team behind Talino-Ruiziano.
                         </p>
                     </div>
 
-                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {values.map((value) => (
-                            <div
-                                key={value.title}
-                                className="card-elevated p-6 text-center hover:scale-[1.02] transition-transform"
-                            >
-                                <div className="w-14 h-14 bg-accent/20 rounded-xl flex items-center justify-center mx-auto mb-4">
-                                    <value.icon className="w-7 h-7 text-accent" />
+                    <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+                        {/* Creator 1 - Kim Ciriaca */}
+                        <div className="card-elevated p-6 text-center hover:scale-[1.02] transition-transform">
+                            <div className="w-32 h-32 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full mx-auto mb-4 flex items-center justify-center overflow-hidden border-4 border-background shadow-lg">
+                                <div className="w-full h-full bg-muted/30 flex items-center justify-center">
+                                    <Users className="w-16 h-16 text-muted-foreground/40" />
                                 </div>
-                                <h3 className="font-serif font-bold text-lg text-foreground mb-2">
-                                    {value.title}
-                                </h3>
-                                <p className="text-muted-foreground text-sm">{value.description}</p>
                             </div>
-                        ))}
+                            <h3 className="font-serif font-bold text-xl text-foreground mb-1">
+                                Kim Ciriaca
+                            </h3>
+                            <p className="text-muted-foreground text-sm mb-2">Developer</p>
+                            <div className="h-1 w-16 bg-gradient-to-r from-primary to-accent mx-auto rounded-full"></div>
+                        </div>
+
+                        {/* Creator 2 - To Be Added */}
+                        <div className="card-elevated p-6 text-center hover:scale-[1.02] transition-transform">
+                            <div className="w-32 h-32 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full mx-auto mb-4 flex items-center justify-center overflow-hidden border-4 border-background shadow-lg">
+                                <div className="w-full h-full bg-muted/30 flex items-center justify-center">
+                                    <Users className="w-16 h-16 text-muted-foreground/40" />
+                                </div>
+                            </div>
+                            <h3 className="font-serif font-bold text-xl text-foreground mb-1">
+                                To Be Added
+                            </h3>
+                            <p className="text-muted-foreground text-sm mb-2">Team Member</p>
+                            <div className="h-1 w-16 bg-gradient-to-r from-primary to-accent mx-auto rounded-full"></div>
+                        </div>
+
+                        {/* Creator 3 - To Be Added */}
+                        <div className="card-elevated p-6 text-center hover:scale-[1.02] transition-transform">
+                            <div className="w-32 h-32 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full mx-auto mb-4 flex items-center justify-center overflow-hidden border-4 border-background shadow-lg">
+                                <div className="w-full h-full bg-muted/30 flex items-center justify-center">
+                                    <Users className="w-16 h-16 text-muted-foreground/40" />
+                                </div>
+                            </div>
+                            <h3 className="font-serif font-bold text-xl text-foreground mb-1">
+                                To Be Added
+                            </h3>
+                            <p className="text-muted-foreground text-sm mb-2">Team Member</p>
+                            <div className="h-1 w-16 bg-gradient-to-r from-primary to-accent mx-auto rounded-full"></div>
+                        </div>
                     </div>
                 </div>
             </section>
+
+
 
             {/* Contact Info */}
             <section className="py-16 bg-muted/30">
@@ -235,7 +204,7 @@ const About = () => {
                                 </div>
                                 <h3 className="font-semibold text-foreground mb-1">Address</h3>
                                 <p className="text-muted-foreground text-sm">
-                                    123 Education Lane, Scholar City, Philippines
+                                    San Bartolome (POB.), 3102 San Leonardo, Nueva Ecija, Philippines
                                 </p>
                             </div>
 
@@ -245,7 +214,7 @@ const About = () => {
                                 </div>
                                 <h3 className="font-semibold text-foreground mb-1">Phone</h3>
                                 <p className="text-muted-foreground text-sm">
-                                    (02) 8123-4567
+                                    N/A
                                 </p>
                             </div>
 
@@ -255,7 +224,7 @@ const About = () => {
                                 </div>
                                 <h3 className="font-semibold text-foreground mb-1">Email</h3>
                                 <p className="text-muted-foreground text-sm">
-                                    info@talinoruiziano.edu.ph
+                                    slrdaacademics@gmail.com
                                 </p>
                             </div>
                         </div>

@@ -26,6 +26,8 @@ import AdminDeadlines from "./pages/AdminDeadlines";
 import AdminStudents from "./pages/AdminStudents";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminSettings from "./pages/AdminSettings";
+import StudentGuide from "./pages/StudentGuide";
+import AdminGuide from "./pages/AdminGuide";
 import Programs from "./pages/Programs";
 import About from "./pages/About";
 import Bulletin from "./pages/Bulletin";
@@ -76,6 +78,7 @@ const App = () => (
               <Route path="calendar" element={<StudyCalendar />} />
               <Route path="todos" element={<Todos />} />
               <Route path="settings" element={<StudentSettings />} />
+              <Route path="guide" element={<StudentGuide />} />
             </Route>
             {/* Admin Routes with Layout */}
             <Route
@@ -92,6 +95,7 @@ const App = () => (
               <Route path="students" element={<AdminStudents />} />
               <Route path="analytics" element={<AdminAnalytics />} />
               <Route path="settings" element={<AdminSettings />} />
+              <Route path="guide" element={<AdminGuide />} />
             </Route>
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

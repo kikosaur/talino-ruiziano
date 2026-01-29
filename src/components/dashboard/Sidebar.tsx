@@ -5,6 +5,7 @@ import {
   Calendar,
   Music,
   MessageCircle,
+  HelpCircle, // Added HelpCircle import
   LogOut,
   BookOpen,
   ChevronLeft,
@@ -20,6 +21,7 @@ const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
   { icon: Upload, label: "Submit ILT", path: "/dashboard/submit" },
   { icon: Calendar, label: "Calendar", path: "/dashboard/calendar" },
+  { icon: HelpCircle, label: "How to Use", path: "/dashboard/guide" },
   { icon: Settings, label: "Settings", path: "/dashboard/settings" },
 ];
 
