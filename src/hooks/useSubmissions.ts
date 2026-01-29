@@ -126,32 +126,33 @@ export const useSubmissions = (isTeacherView = false) => {
           .update({ total_points: profile.total_points + 50 })
           .eq("user_id", user.id);
 
-        // --- Badge Check Logic ---
+        // --- Advanced Badge Check Logic ---
         const newPoints = profile.total_points + 50;
-        const newSubmissionCount = (submissions?.length || 0) + 1;
 
-        // Fetch all badges and user's earned badges
+        // 1. Fetch data for advanced checks
         const { data: allBadges } = await supabase.from('badges').select('*');
         const { data: userBadges } = await supabase.from('user_badges').select('badge_id').eq('user_id', user.id);
+        const { data: deadlineData } = await supabase.from('ilt_deadlines').select('deadline').eq('name', iltName).single();
+        const { data: currentProfile } = await supabase.from('profiles').select('streak_days').eq('user_id', user.id).single();
+
         const earnedBadgeIds = new Set(userBadges?.map(b => b.badge_id));
+        const now = new Date();
+        const isWeekend = now.getDay() === 0 || now.getDay() === 6;
+        const daysToDeadline = deadlineData ? Math.floor((new Date(deadlineData.deadline).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;
 
         const newBadges = allBadges?.filter(badge => {
           if (earnedBadgeIds.has(badge.id)) return false;
 
           let earned = false;
-          // Check points threshold
-          if (badge.required_points && newPoints >= badge.required_points) {
-            // For points badges, we want exact matches or milestones. 
-            // Typically ">= value". 
-            // But if I have a "100 points" badge and I have 150, I should have it.
-            // The loop filters out already earned ones, so ">= " is safe.
-            earned = true;
-          }
 
-          // Check submission count threshold
-          if (badge.required_submissions && newSubmissionCount >= badge.required_submissions) {
-            earned = true;
-          }
+          // Basic thresholds
+          if (badge.required_points && newPoints >= badge.required_points) earned = true;
+
+          // Advanced logic based on badge names (as identifiers)
+          if (badge.name === 'Early Bird' && daysToDeadline !== null && daysToDeadline >= 3) earned = true;
+          if (badge.name === 'Weekend Warrior' && isWeekend) earned = true;
+          if (badge.name === 'On Fire' && currentProfile && currentProfile.streak_days >= 7) earned = true;
+          if (badge.name === 'Scholar' && newPoints >= 1000) earned = true;
 
           return earned;
         }) || [];
@@ -166,7 +167,7 @@ export const useSubmissions = (isTeacherView = false) => {
             toast({
               title: "New Badge Unlocked! 🏅",
               description: `You earned the "${badge.name}" badge!`,
-              className: "bg-primary text-primary-foreground border-primary"
+              className: "bg-primary text-primary-foreground border-primary shadow-[var(--shadow-gold)]"
             });
           }
         }
