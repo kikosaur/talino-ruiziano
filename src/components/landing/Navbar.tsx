@@ -12,9 +12,9 @@ const Navbar = () => {
         {/* Logo and Brand */}
         <Link to="/" className="flex items-center gap-3 group">
           <img
-            src="/School_Logo.png"
+            src="/bulb.png"
             alt="Talino Ruiziano Logo"
-            className="w-10 h-10 object-contain group-hover:scale-110 transition-transform"
+            className="w-16 h-16 object-contain group-hover:scale-110 transition-transform"
           />
           <div className="flex flex-col">
             <span

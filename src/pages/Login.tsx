@@ -113,9 +113,11 @@ const Login = () => {
           {/* Mobile logo */}
           <div className="lg:hidden text-center mb-8">
             <Link to="/" className="inline-flex items-center gap-3">
-              <div className="w-12 h-12 bg-accent rounded-xl flex items-center justify-center shadow-[var(--shadow-gold)]">
-                <BookOpen className="w-7 h-7 text-accent-foreground" />
-              </div>
+              <img
+                src="/bulb.png"
+                alt="Talino Ruiziano Logo"
+                className="w-12 h-12 object-contain"
+              />
               <span className="text-2xl font-serif font-bold text-foreground">
                 Talino-Ruiziano
               </span>

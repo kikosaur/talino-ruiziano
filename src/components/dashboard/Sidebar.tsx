@@ -47,9 +47,11 @@ const DashboardSidebar = ({ onMusicToggle, onChatToggle }: DashboardSidebarProps
       {/* Logo */}
       <div className="p-4 border-b border-primary-foreground/20">
         <Link to="/" className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center shadow-[var(--shadow-gold)] flex-shrink-0">
-            <BookOpen className="w-6 h-6 text-accent-foreground" />
-          </div>
+          <img
+            src="/bulb.png"
+            alt="Talino Ruiziano Logo"
+            className="w-10 h-10 object-contain flex-shrink-0"
+          />
           {!collapsed && (
             <span className="text-lg font-serif font-bold truncate">
               Talino-Ruiziano

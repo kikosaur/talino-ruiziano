@@ -19,7 +19,7 @@ const Register = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (password !== confirmPassword) {
       toast({
         title: "Passwords don't match",
@@ -39,9 +39,9 @@ const Register = () => {
     }
 
     setIsLoading(true);
-    
+
     const { error } = await signUp(email, password, displayName);
-    
+
     setIsLoading(false);
 
     if (error) {
@@ -68,25 +68,25 @@ const Register = () => {
           <div className="absolute top-20 left-10 w-32 h-32 bg-accent/20 rounded-full blur-3xl animate-float" />
           <div className="absolute bottom-20 right-10 w-48 h-48 bg-primary-foreground/10 rounded-full blur-3xl animate-float" style={{ animationDelay: "1s" }} />
         </div>
-        
+
         <div className="relative z-10 text-center space-y-8">
-          <div className="w-24 h-24 bg-accent rounded-3xl flex items-center justify-center mx-auto shadow-[var(--shadow-gold)] animate-float">
-            <BookOpen className="w-12 h-12 text-accent-foreground" />
+          <div className="w-24 h-24 flex items-center justify-center mx-auto animate-float">
+            <img src="/bulb.png" alt="Talino Ruiziano Logo" className="w-24 h-24 object-contain" />
           </div>
           <div className="space-y-4">
             <h1 className="text-4xl font-serif font-bold text-primary-foreground">
               Talino-Ruiziano
             </h1>
             <p className="text-primary-foreground/80 text-lg max-w-md mx-auto">
-              Join our gamified learning community! Earn points, unlock badges, 
+              Join our gamified learning community! Earn points, unlock badges,
               and excel in your studies!
             </p>
           </div>
-          
+
           {/* Floating badges */}
           <div className="flex justify-center gap-4 mt-8">
             {["🌟", "📚", "🔥", "🏆"].map((emoji, i) => (
-              <div 
+              <div
                 key={i}
                 className="w-14 h-14 bg-primary-foreground/10 rounded-xl flex items-center justify-center text-2xl animate-float"
                 style={{ animationDelay: `${i * 0.2}s` }}
@@ -104,9 +104,11 @@ const Register = () => {
           {/* Mobile logo */}
           <div className="lg:hidden text-center mb-8">
             <Link to="/" className="inline-flex items-center gap-3">
-              <div className="w-12 h-12 bg-accent rounded-xl flex items-center justify-center shadow-[var(--shadow-gold)]">
-                <BookOpen className="w-7 h-7 text-accent-foreground" />
-              </div>
+              <img
+                src="/bulb.png"
+                alt="Talino Ruiziano Logo"
+                className="w-12 h-12 object-contain"
+              />
               <span className="text-2xl font-serif font-bold text-foreground">
                 Talino-Ruiziano
               </span>
@@ -196,8 +198,8 @@ const Register = () => {
                 </div>
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="btn-gold w-full text-lg flex items-center justify-center gap-2"
                 disabled={isLoading}
               >

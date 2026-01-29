@@ -51,27 +51,75 @@ const About = () => {
             <Navbar />
 
             {/* Hero Section */}
-            <section className="pt-24 pb-12 bg-gradient-to-br from-primary to-primary/80">
-                <div className="container mx-auto px-4">
+            <section
+                className="pt-24 pb-12 relative overflow-hidden"
+                style={{
+                    backgroundImage: "url('/School_bg.png')",
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                }}
+            >
+                {/* Dark overlay for readability */}
+                <div className="absolute inset-0 bg-black/50" />
+
+                <div className="container mx-auto px-4 relative z-10">
                     <Link
                         to="/"
-                        className="inline-flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground mb-6 transition-colors"
+                        className="inline-flex items-center gap-2 text-white/80 hover:text-white mb-6 transition-colors"
                     >
                         <ArrowLeft className="w-4 h-4" />
                         Back to Home
                     </Link>
                     <div className="flex items-center gap-4 mb-4">
-                        <div className="w-16 h-16 bg-accent rounded-2xl flex items-center justify-center shadow-[var(--shadow-gold)]">
-                            <BookOpen className="w-8 h-8 text-accent-foreground" />
-                        </div>
+                        <img
+                            src="/bulb.png"
+                            alt="Talino Ruiziano Logo"
+                            className="w-16 h-16 object-contain"
+                        />
                         <div>
-                            <h1 className="text-4xl font-serif font-bold text-primary-foreground">
+                            <h1 className="text-4xl font-serif font-bold text-white">
                                 About Talino-Ruiziano
                             </h1>
-                            <p className="text-primary-foreground/80 text-lg">
+                            <p className="text-white/80 text-lg">
                                 Empowering learners since 2001
                             </p>
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Explore Now Section */}
+            <section className="relative" style={{ backgroundColor: "#FFF9F0" }}>
+                {/* Button overlapping the hero section */}
+                <div className="absolute left-1/2 -translate-x-1/2 -top-6">
+                    <Link to="/login">
+                        <button
+                            className="px-12 py-3 text-lg font-semibold rounded-full border-2 shadow-lg hover:scale-105 transition-all"
+                            style={{
+                                backgroundColor: "#FFF9F0",
+                                borderColor: "#801B1B",
+                                color: "#801B1B",
+                            }}
+                        >
+                            EXPLORE NOW!
+                        </button>
+                    </Link>
+                </div>
+
+                <div className="container mx-auto px-4 pt-12 pb-8">
+                    <div className="max-w-4xl">
+                        <h2
+                            className="text-3xl font-serif font-bold mb-4"
+                            style={{ color: "#801B1B" }}
+                        >
+                            Talino-Ruiziano
+                        </h2>
+                        <p
+                            className="text-lg leading-relaxed"
+                            style={{ color: "#4A0E0E" }}
+                        >
+                            Make completing your ILTs fun and stress-free! Earn points, listen to music, and customize your avatar while submitting your tasks on time. Teachers can easily track and check your work, so everyone wins. Stay motivated, enjoy learning, and celebrate your achievements!
+                        </p>
                     </div>
                 </div>
             </section>
