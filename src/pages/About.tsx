@@ -70,17 +70,17 @@ const About = () => {
                         <ArrowLeft className="w-4 h-4" />
                         Back to Home
                     </Link>
-                    <div className="flex items-center gap-4 mb-4">
+                    <div className="flex items-center gap-3 md:gap-4 mb-4">
                         <img
                             src="/bulb.png"
                             alt="Talino Ruiziano Logo"
-                            className="w-16 h-16 object-contain"
+                            className="w-12 h-12 md:w-16 md:h-16 object-contain"
                         />
                         <div>
-                            <h1 className="text-4xl font-serif font-bold text-white">
+                            <h1 className="text-2xl md:text-3xl lg:text-4xl font-serif font-bold text-white">
                                 About Talino-Ruiziano
                             </h1>
-                            <p className="text-white/80 text-lg">
+                            <p className="text-white/80 text-sm md:text-base lg:text-lg">
                                 Empowering learners since 2001
                             </p>
                         </div>
@@ -94,7 +94,7 @@ const About = () => {
                 <div className="absolute left-1/2 -translate-x-1/2 -top-6">
                     <Link to="/login">
                         <button
-                            className="px-12 py-3 text-lg font-semibold rounded-full border-2 shadow-lg hover:scale-105 transition-all"
+                            className="px-6 py-2 md:px-12 md:py-3 text-base md:text-lg font-semibold rounded-full border-2 shadow-lg hover:scale-105 transition-all"
                             style={{
                                 backgroundColor: "#FFF9F0",
                                 borderColor: "#801B1B",
@@ -109,13 +109,13 @@ const About = () => {
                 <div className="container mx-auto px-4 pt-12 pb-8">
                     <div className="max-w-4xl">
                         <h2
-                            className="text-3xl font-serif font-bold mb-4"
+                            className="text-2xl md:text-3xl font-serif font-bold mb-4"
                             style={{ color: "#801B1B" }}
                         >
                             Talino-Ruiziano
                         </h2>
                         <p
-                            className="text-lg leading-relaxed"
+                            className="text-base md:text-lg leading-relaxed"
                             style={{ color: "#4A0E0E" }}
                         >
                             Make completing your ILTs fun and stress-free! Earn points, listen to music, and customize your avatar while submitting your tasks on time. Teachers can easily track and check your work, so everyone wins. Stay motivated, enjoy learning, and celebrate your achievements!
@@ -125,18 +125,18 @@ const About = () => {
             </section>
 
             {/* Creators Section */}
-            <section className="py-16">
+            <section className="py-12 md:py-16">
                 <div className="container mx-auto px-4">
-                    <div className="text-center mb-12">
-                        <h2 className="text-3xl font-serif font-bold text-foreground mb-2">
+                    <div className="text-center mb-8 md:mb-12">
+                        <h2 className="text-2xl md:text-3xl font-serif font-bold text-foreground mb-2">
                             Meet the Creators
                         </h2>
-                        <p className="text-muted-foreground max-w-2xl mx-auto">
-                            The team behind Talino-Ruiziano.
+                        <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto">
+                            The team behind StudySpark
                         </p>
                     </div>
 
-                    <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8 max-w-4xl mx-auto">
                         {/* Creator 1 - Kim Ciriaca */}
                         <div className="card-elevated p-6 text-center hover:scale-[1.02] transition-transform">
                             <div className="w-32 h-32 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full mx-auto mb-4 flex items-center justify-center overflow-hidden border-4 border-background shadow-lg">

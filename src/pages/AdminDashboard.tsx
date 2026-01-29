@@ -38,7 +38,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Quick stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             { icon: FileText, label: "Total Submissions", value: stats.totalSubmissions, color: "bg-accent" },
             { icon: Clock, label: "Pending Review", value: stats.pendingReview, color: "bg-secondary" },
