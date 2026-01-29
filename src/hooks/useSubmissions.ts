@@ -20,8 +20,8 @@ export interface Submission {
   student_email?: string;
 }
 
-export const useSubmissions = (isAdminView = false) => {
-  const { user, isAdmin } = useAuth();
+export const useSubmissions = (isTeacherView = false) => {
+  const { user, isTeacher } = useAuth();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,8 +35,8 @@ export const useSubmissions = (isAdminView = false) => {
 
       let query = supabase.from("submissions").select("*");
 
-      // Non-admins only see their own submissions
-      if (!isAdminView || !isAdmin) {
+      // Teachers only see their own submissions unless specified
+      if (!isTeacherView || !isTeacher) {
         query = query.eq("user_id", user.id);
       }
 
@@ -44,8 +44,8 @@ export const useSubmissions = (isAdminView = false) => {
 
       if (fetchError) throw fetchError;
 
-      // If admin view, fetch profile info for each submission
-      if (isAdminView && isAdmin && data) {
+      // If teacher view, fetch profile info for each submission
+      if (isTeacherView && isTeacher && data) {
         const userIds = [...new Set(data.map((s) => s.user_id))];
         const { data: profiles } = await supabase
           .from("profiles")
@@ -74,7 +74,7 @@ export const useSubmissions = (isAdminView = false) => {
 
   useEffect(() => {
     fetchSubmissions();
-  }, [user, isAdmin, isAdminView]);
+  }, [user, isTeacher, isTeacherView]);
 
   const submitILT = async (
     iltName: string,
@@ -143,7 +143,7 @@ export const useSubmissions = (isAdminView = false) => {
     status: "pending" | "reviewed" | "graded",
     grade?: string
   ) => {
-    if (!isAdmin) return { success: false, error: "Not authorized" };
+    if (!isTeacher) return { success: false, error: "Not authorized" };
 
     try {
       const { error } = await supabase

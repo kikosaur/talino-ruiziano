@@ -33,6 +33,7 @@ const SubmitILT = () => {
   const iltOptions = deadlines.map((d) => ({
     id: d.id,
     name: d.name,
+    subject: d.subject || "General",
     dueDate: format(new Date(d.deadline), "MMM d, yyyy"),
   }));
 
@@ -200,9 +201,17 @@ const SubmitILT = () => {
                           <CheckCircle className="w-3 h-3 text-accent-foreground" />
                         )}
                       </div>
-                      <span className="font-medium text-foreground">{ilt.name}</span>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-foreground">{ilt.name}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent/20 text-accent font-bold uppercase">
+                            {ilt.subject}
+                          </span>
+                        </div>
+                        <span className="text-sm text-muted-foreground md:hidden">Due: {ilt.dueDate}</span>
+                      </div>
                     </div>
-                    <span className="text-sm text-muted-foreground">Due: {ilt.dueDate}</span>
+                    <span className="text-sm text-muted-foreground hidden md:inline">Due: {ilt.dueDate}</span>
                   </button>
                 ))}
               </div>

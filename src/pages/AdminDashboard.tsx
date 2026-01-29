@@ -38,7 +38,7 @@ const AdminDashboard = () => {
         <div className="max-w-7xl mx-auto space-y-8">
           {/* Header */}
           <div className="space-y-2">
-            <h1 className="section-title text-3xl">Admin Dashboard</h1>
+            <h1 className="section-title text-3xl">Teacher Dashboard</h1>
             <p className="text-muted-foreground text-lg">
               Welcome back! Here's an overview of your class activity.
             </p>
@@ -145,7 +145,7 @@ const AdminDashboard = () => {
                 View all →
               </Link>
             </div>
-            
+
             {recentSubmissions.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
@@ -168,13 +168,12 @@ const AdminDashboard = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                        submission.status === "graded" 
+                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${submission.status === "graded"
                           ? "bg-green-500/20 text-green-700"
                           : submission.status === "reviewed"
-                          ? "bg-secondary/20 text-secondary"
-                          : "bg-accent/20 text-accent-foreground"
-                      }`}>
+                            ? "bg-secondary/20 text-secondary"
+                            : "bg-accent/20 text-accent-foreground"
+                        }`}>
                         {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
                       </span>
                       <p className="text-xs text-muted-foreground mt-1">

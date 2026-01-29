@@ -1,4 +1,5 @@
 import {
+  Settings,
   LayoutDashboard,
   Upload,
   Calendar,
@@ -19,6 +20,7 @@ const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
   { icon: Upload, label: "Submit ILT", path: "/dashboard/submit" },
   { icon: Calendar, label: "Calendar", path: "/dashboard/calendar" },
+  { icon: Settings, label: "Settings", path: "/dashboard/settings" },
 ];
 
 interface DashboardSidebarProps {
@@ -30,7 +32,7 @@ const DashboardSidebar = ({ onMusicToggle, onChatToggle }: DashboardSidebarProps
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut, isAdmin, profile } = useAuth();
+  const { signOut, isTeacher, profile } = useAuth();
 
   const handleLogout = async () => {
     await signOut();
@@ -121,8 +123,8 @@ const DashboardSidebar = ({ onMusicToggle, onChatToggle }: DashboardSidebarProps
           )}
         </button>
 
-        {/* Admin link - only show for admins */}
-        {isAdmin && (
+        {/* Teacher link - only show for teachers */}
+        {isTeacher && (
           <Link
             to="/admin"
             className={cn(
@@ -134,7 +136,7 @@ const DashboardSidebar = ({ onMusicToggle, onChatToggle }: DashboardSidebarProps
           >
             <Shield className="w-5 h-5 flex-shrink-0" />
             {!collapsed && (
-              <span className="font-medium truncate">Admin Panel</span>
+              <span className="font-medium truncate">Teacher Panel</span>
             )}
           </Link>
         )}

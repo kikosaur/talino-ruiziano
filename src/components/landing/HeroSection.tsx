@@ -81,14 +81,14 @@ const HeroSection = () => {
               </div>
 
               {/* Login Button - positioned at bottom of signboard */}
-              <div className="absolute left-1/2 -translate-x-1/2" style={{ bottom: "22%" }}>
+              <div className="absolute left-1/2 -translate-x-1/3" style={{ bottom: "calc(26% - 15px)" }}>
                 <Link to="/login">
                   <Button
                     className="px-4 sm:px-6 md:px-8 py-1.5 sm:py-2 text-sm sm:text-base md:text-lg font-semibold rounded-full hover:opacity-90 transition-all hover:scale-105 shadow-lg"
                     style={{
                       backgroundColor: "#801B1B",
                       color: "#fff",
-                      transform: "rotate(-3deg)",
+                      transform: "rotate(-7deg)",
                     }}
                   >
                     Log in

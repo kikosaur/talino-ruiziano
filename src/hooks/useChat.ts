@@ -10,15 +10,17 @@ export interface ChatMessage {
     created_at: string;
     // Joined from profiles
     sender_name?: string;
+    sender_avatar?: string | null;
     sender_role?: string;
 }
 
 export const useChat = () => {
-    const { user, profile, isAdmin } = useAuth();
+    const { user, profile, isTeacher } = useAuth();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isConnected, setIsConnected] = useState(false);
+    const [onlineUsers, setOnlineUsers] = useState<{ user_id: string, name: string, role: string }[]>([]);
 
     // Fetch existing messages with sender info
     const fetchMessages = useCallback(async () => {
@@ -40,7 +42,7 @@ export const useChat = () => {
                 const userIds = [...new Set(messagesData.map((m) => m.user_id))];
                 const { data: profiles } = await supabase
                     .from("profiles")
-                    .select("user_id, display_name")
+                    .select("user_id, display_name, avatar_url")
                     .in("user_id", userIds);
 
                 // Fetch roles
@@ -49,14 +51,18 @@ export const useChat = () => {
                     .select("user_id, role")
                     .in("user_id", userIds);
 
-                const profileMap = new Map(profiles?.map((p) => [p.user_id, p.display_name]));
+                const profileMap = new Map(profiles?.map((p) => [p.user_id, p]));
                 const roleMap = new Map(roles?.map((r) => [r.user_id, r.role]));
 
-                const enrichedMessages = messagesData.map((m) => ({
-                    ...m,
-                    sender_name: profileMap.get(m.user_id) || "Unknown",
-                    sender_role: roleMap.get(m.user_id) || "user",
-                }));
+                const enrichedMessages = messagesData.map((m) => {
+                    const profile = profileMap.get(m.user_id);
+                    return {
+                        ...m,
+                        sender_name: profile?.display_name || "Unknown",
+                        sender_avatar: profile?.avatar_url,
+                        sender_role: roleMap.get(m.user_id) || "student",
+                    };
+                });
 
                 setMessages(enrichedMessages);
             } else {
@@ -118,7 +124,7 @@ export const useChat = () => {
                         // Fetch sender info for the new message
                         const { data: profileData } = await supabase
                             .from("profiles")
-                            .select("display_name")
+                            .select("display_name, avatar_url")
                             .eq("user_id", newMessage.user_id)
                             .maybeSingle();
 
@@ -131,14 +137,44 @@ export const useChat = () => {
                         const enrichedMessage: ChatMessage = {
                             ...newMessage,
                             sender_name: profileData?.display_name || "Unknown",
-                            sender_role: roleData?.role || "user",
+                            sender_avatar: profileData?.avatar_url,
+                            sender_role: roleData?.role || "student",
                         };
 
                         setMessages((prev) => [...prev, enrichedMessage]);
                     }
                 )
-                .subscribe((status) => {
+                .subscribe(async (status) => {
                     setIsConnected(status === "SUBSCRIBED");
+
+                    if (status === "SUBSCRIBED") {
+                        await channel?.track({
+                            user_id: user.id,
+                            online_at: new Date().toISOString(),
+                            name: profile?.display_name || "Unknown",
+                            role: isTeacher ? "teacher" : "student"
+                        });
+                    }
+                });
+
+            channel
+                .on("presence", { event: "sync" }, () => {
+                    const newState = channel?.presenceState();
+                    const users = [];
+                    for (const key in newState) {
+                        const stateUsers = newState[key];
+                        // Each key might have multiple entries (tabs)
+                        stateUsers.forEach((u: any) => {
+                            if (!users.find(existing => existing.user_id === u.user_id)) {
+                                users.push({
+                                    user_id: u.user_id,
+                                    name: u.name,
+                                    role: u.role
+                                });
+                            }
+                        });
+                    }
+                    setOnlineUsers(users);
                 });
         };
 
@@ -162,6 +198,7 @@ export const useChat = () => {
         refreshMessages: fetchMessages,
         currentUserId: user?.id,
         currentUserName: profile?.display_name || "You",
-        isCurrentUserAdmin: isAdmin,
+        isCurrentUserTeacher: isTeacher,
+        onlineUsers,
     };
 };

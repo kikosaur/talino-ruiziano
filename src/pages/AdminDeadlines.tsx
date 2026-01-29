@@ -31,12 +31,13 @@ const AdminDeadlines = () => {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         name: "",
+        subject: "",
         description: "",
         deadline: "",
     });
 
     const resetForm = () => {
-        setFormData({ name: "", description: "", deadline: "" });
+        setFormData({ name: "", subject: "", description: "", deadline: "" });
         setIsAdding(false);
         setEditingId(null);
     };
@@ -46,6 +47,7 @@ const AdminDeadlines = () => {
         setEditingId(null);
         setFormData({
             name: "",
+            subject: "",
             description: "",
             deadline: format(new Date(), "yyyy-MM-dd"),
         });
@@ -56,6 +58,7 @@ const AdminDeadlines = () => {
         setIsAdding(false);
         setFormData({
             name: deadline.name,
+            subject: deadline.subject || "General",
             description: deadline.description,
             deadline: format(new Date(deadline.deadline), "yyyy-MM-dd"),
         });
@@ -65,10 +68,11 @@ const AdminDeadlines = () => {
         if (!formData.name.trim() || !formData.deadline) return;
 
         if (isAdding) {
-            addDeadline(formData.name, formData.description, new Date(formData.deadline));
+            addDeadline(formData.name, formData.subject || "General", formData.description, new Date(formData.deadline));
         } else if (editingId) {
             updateDeadline(editingId, {
                 name: formData.name,
+                subject: formData.subject || "General",
                 description: formData.description,
                 deadline: new Date(formData.deadline).toISOString(),
             });
@@ -165,6 +169,19 @@ const AdminDeadlines = () => {
 
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-foreground">
+                                        Subject *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.subject}
+                                        onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                                        placeholder="e.g., Research, History"
+                                        className="w-full px-4 py-2 rounded-xl border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-foreground">
                                         Due Date *
                                     </label>
                                     <input
@@ -175,7 +192,7 @@ const AdminDeadlines = () => {
                                     />
                                 </div>
 
-                                <div className="md:col-span-2 space-y-2">
+                                <div className="space-y-2">
                                     <label className="text-sm font-medium text-foreground">
                                         Description
                                     </label>
@@ -248,14 +265,19 @@ const AdminDeadlines = () => {
                                                     />
                                                 </div>
                                                 <div className="min-w-0 flex-1">
-                                                    <p
-                                                        className={cn(
-                                                            "font-medium truncate",
-                                                            isPast ? "text-muted-foreground" : "text-foreground"
-                                                        )}
-                                                    >
-                                                        {deadline.name}
-                                                    </p>
+                                                    <div className="flex items-center gap-2 mb-0.5">
+                                                        <p
+                                                            className={cn(
+                                                                "font-medium truncate",
+                                                                isPast ? "text-muted-foreground" : "text-foreground"
+                                                            )}
+                                                        >
+                                                            {deadline.name}
+                                                        </p>
+                                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/10 text-accent font-medium uppercase tracking-wider">
+                                                            {deadline.subject || "General"}
+                                                        </span>
+                                                    </div>
                                                     <p className="text-sm text-muted-foreground truncate">
                                                         {deadline.description || "No description"}
                                                     </p>

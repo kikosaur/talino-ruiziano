@@ -3,57 +3,17 @@ import { useState, useEffect, useCallback } from "react";
 export interface ILTDeadline {
     id: string;
     name: string;
+    subject: string;
     description: string;
     deadline: string; // ISO date string
     createdAt: string;
     updatedAt: string;
 }
 
-const STORAGE_KEY = "ilt_deadlines";
+const STORAGE_KEY = "ilt_deadlines_v2";
 
 // Default deadlines if none exist
-const defaultDeadlines: ILTDeadline[] = [
-    {
-        id: "ilt-1",
-        name: "ILT Week 1: Introduction to Research",
-        description: "Introduction to research methodology and scientific writing basics.",
-        deadline: new Date(2026, 0, 15).toISOString(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-    {
-        id: "ilt-2",
-        name: "ILT Week 2: Literature Review",
-        description: "Conduct a literature review on your chosen topic.",
-        deadline: new Date(2026, 0, 22).toISOString(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-    {
-        id: "ilt-3",
-        name: "ILT Week 3: Methodology",
-        description: "Define your research methodology and approach.",
-        deadline: new Date(2026, 0, 29).toISOString(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-    {
-        id: "ilt-4",
-        name: "ILT Week 4: Data Collection",
-        description: "Collect and organize your research data.",
-        deadline: new Date(2026, 1, 5).toISOString(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-    {
-        id: "ilt-5",
-        name: "ILT Week 5: Data Analysis",
-        description: "Analyze your collected data and draw insights.",
-        deadline: new Date(2026, 1, 12).toISOString(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-];
+const defaultDeadlines: ILTDeadline[] = [];
 
 export const useILTDeadlines = () => {
     const [deadlines, setDeadlines] = useState<ILTDeadline[]>([]);
@@ -65,7 +25,12 @@ export const useILTDeadlines = () => {
             const stored = localStorage.getItem(STORAGE_KEY);
             if (stored) {
                 const parsed = JSON.parse(stored);
-                setDeadlines(parsed);
+                // Migration: add default subject if missing
+                const migrated = parsed.map((d: any) => ({
+                    ...d,
+                    subject: d.subject || "General"
+                }));
+                setDeadlines(migrated);
             } else {
                 // Initialize with defaults
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultDeadlines));
@@ -91,10 +56,11 @@ export const useILTDeadlines = () => {
 
     // Add a new deadline
     const addDeadline = useCallback(
-        (name: string, description: string, deadline: Date): ILTDeadline => {
+        (name: string, subject: string, description: string, deadline: Date): ILTDeadline => {
             const newDeadline: ILTDeadline = {
                 id: `ilt-${Date.now()}`,
                 name,
+                subject,
                 description,
                 deadline: deadline.toISOString(),
                 createdAt: new Date().toISOString(),

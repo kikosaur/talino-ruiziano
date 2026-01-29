@@ -40,7 +40,7 @@ const Register = () => {
 
     setIsLoading(true);
 
-    const { error } = await signUp(email, password, displayName);
+    const { data, error } = await signUp(email, password, displayName);
 
     setIsLoading(false);
 
@@ -53,11 +53,20 @@ const Register = () => {
       return;
     }
 
-    toast({
-      title: "Welcome to Talino-Ruiziano! 🎓",
-      description: "Your account has been created successfully.",
-    });
-    navigate("/dashboard");
+    if (data?.session) {
+      toast({
+        title: "Welcome to Talino-Ruiziano! 🎓",
+        description: "Your account has been created successfully.",
+      });
+      navigate("/dashboard");
+    } else {
+      // Email confirmation case
+      toast({
+        title: "Registration successful! 📧",
+        description: "Please check your email to confirm your account.",
+      });
+      navigate("/login");
+    }
   };
 
   return (

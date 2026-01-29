@@ -11,6 +11,7 @@ type DeadlineStatus = "completed" | "upcoming" | "overdue";
 
 interface DeadlineWithStatus {
   name: string;
+  subject?: string;
   deadline: Date;
   status: DeadlineStatus;
   submittedAt?: Date;
@@ -63,14 +64,15 @@ const StudyCalendar = () => {
       if (submission) {
         return {
           name: ilt.name,
+          subject: ilt.subject || "General",
           deadline: deadlineDate,
           status: "completed" as DeadlineStatus,
           submittedAt: new Date(submission.submitted_at),
         };
       } else if (isBefore(deadlineDate, now)) {
-        return { name: ilt.name, deadline: deadlineDate, status: "overdue" as DeadlineStatus };
+        return { name: ilt.name, subject: ilt.subject || "General", deadline: deadlineDate, status: "overdue" as DeadlineStatus };
       } else {
-        return { name: ilt.name, deadline: deadlineDate, status: "upcoming" as DeadlineStatus };
+        return { name: ilt.name, subject: ilt.subject || "General", deadline: deadlineDate, status: "upcoming" as DeadlineStatus };
       }
     });
   }, [submissions, iltDeadlines]);
@@ -267,9 +269,19 @@ const StudyCalendar = () => {
                       <div className="flex items-start gap-3">
                         <StatusIcon className={cn("w-5 h-5 shrink-0 mt-0.5", config.textClass)} />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">
-                            {deadline.name}
-                          </p>
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <p className="text-sm font-medium text-foreground truncate">
+                              {deadline.name}
+                            </p>
+                            {deadline.subject && (
+                              <span className={cn(
+                                "text-[10px] px-1.5 py-0 rounded-full font-bold uppercase",
+                                deadline.status === "completed" ? "bg-green-500/20 text-green-700" : "bg-accent/20 text-accent"
+                              )}>
+                                {deadline.subject}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-xs text-muted-foreground">
                             Due: {format(deadline.deadline, "MMM d, yyyy")}
                           </p>

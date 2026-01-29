@@ -9,11 +9,16 @@ import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
 import SubmitILT from "./pages/SubmitILT";
 import StudyCalendar from "./pages/StudyCalendar";
+import StudentSettings from "./pages/StudentSettings";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminSubmissions from "./pages/AdminSubmissions";
 import AdminDeadlines from "./pages/AdminDeadlines";
+import AdminStudents from "./pages/AdminStudents";
+import AdminAnalytics from "./pages/AdminAnalytics";
+import AdminSettings from "./pages/AdminSettings";
 import Programs from "./pages/Programs";
 import About from "./pages/About";
 import Bulletin from "./pages/Bulletin";
@@ -32,6 +37,7 @@ const App = () => (
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/programs" element={<Programs />} />
             <Route path="/about" element={<About />} />
             <Route path="/bulletin" element={<Bulletin />} />
@@ -60,9 +66,17 @@ const App = () => (
               }
             />
             <Route
+              path="/dashboard/settings"
+              element={
+                <ProtectedRoute>
+                  <StudentSettings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/admin"
               element={
-                <ProtectedRoute requireAdmin>
+                <ProtectedRoute requireTeacher>
                   <AdminDashboard />
                 </ProtectedRoute>
               }
@@ -70,7 +84,7 @@ const App = () => (
             <Route
               path="/admin/submissions"
               element={
-                <ProtectedRoute requireAdmin>
+                <ProtectedRoute requireTeacher>
                   <AdminSubmissions />
                 </ProtectedRoute>
               }
@@ -78,8 +92,32 @@ const App = () => (
             <Route
               path="/admin/deadlines"
               element={
-                <ProtectedRoute requireAdmin>
+                <ProtectedRoute requireTeacher>
                   <AdminDeadlines />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/students"
+              element={
+                <ProtectedRoute requireTeacher>
+                  <AdminStudents />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/analytics"
+              element={
+                <ProtectedRoute requireTeacher>
+                  <AdminAnalytics />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/settings"
+              element={
+                <ProtectedRoute requireTeacher>
+                  <AdminSettings />
                 </ProtectedRoute>
               }
             />

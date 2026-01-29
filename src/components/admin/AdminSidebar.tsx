@@ -54,7 +54,7 @@ const AdminSidebar = () => {
           {!collapsed && (
             <div>
               <span className="text-lg font-serif font-bold block">
-                Admin Panel
+                Teacher Panel
               </span>
               <span className="text-xs text-background/60">Talino-Ruiziano</span>
             </div>
@@ -65,7 +65,7 @@ const AdminSidebar = () => {
       {/* User info */}
       {!collapsed && profile && (
         <div className="px-4 py-3 border-b border-background/20">
-          <p className="text-sm font-medium truncate text-background">{profile.display_name || "Admin"}</p>
+          <p className="text-sm font-medium truncate text-background">{profile.display_name || "Teacher"}</p>
           <p className="text-xs text-background/60 truncate">{profile.email}</p>
         </div>
       )}

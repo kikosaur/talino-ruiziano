@@ -9,6 +9,13 @@ import {
     Loader2,
     Users,
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useChat } from "@/hooks/useChat";
 import { cn } from "@/lib/utils";
 
@@ -25,7 +32,8 @@ const PeerChat = ({ isVisible, onToggle }: PeerChatProps) => {
         sendMessage,
         currentUserId,
         currentUserName,
-        isCurrentUserAdmin,
+        isCurrentUserTeacher,
+        onlineUsers,
     } = useChat();
 
     const [isExpanded, setIsExpanded] = useState(true);
@@ -72,23 +80,7 @@ const PeerChat = ({ isVisible, onToggle }: PeerChatProps) => {
         return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     };
 
-    const getRoleBadge = (role?: string) => {
-        if (role === "admin") {
-            return (
-                <span className="text-[10px] font-bold bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded-full ml-1">
-                    Admin
-                </span>
-            );
-        }
-        if (role === "teacher") {
-            return (
-                <span className="text-[10px] font-bold bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded-full ml-1">
-                    Teacher
-                </span>
-            );
-        }
-        return null;
-    };
+
 
     if (!isVisible) {
         return null;
@@ -129,10 +121,29 @@ const PeerChat = ({ isVisible, onToggle }: PeerChatProps) => {
                                 <span className="font-semibold text-foreground">Peer Chat</span>
                                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                     {isConnected ? (
-                                        <>
-                                            <Wifi className="w-3 h-3 text-green-500" />
-                                            <span className="text-green-500">Connected</span>
-                                        </>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <div className="flex items-center gap-1 cursor-help">
+                                                        <Wifi className="w-3 h-3 text-green-500" />
+                                                        <span className="text-green-500">
+                                                            {onlineUsers.length} Online
+                                                        </span>
+                                                    </div>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <div className="text-xs space-y-1">
+                                                        <p className="font-semibold text-muted-foreground mb-1">Online Users:</p>
+                                                        {onlineUsers.map(u => (
+                                                            <div key={u.user_id} className="flex items-center gap-1.5">
+                                                                <div className={cn("w-1.5 h-1.5 rounded-full", u.role === 'teacher' ? "bg-yellow-500" : "bg-green-500")} />
+                                                                <span>{u.name}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
                                     ) : (
                                         <>
                                             <WifiOff className="w-3 h-3 text-red-500" />
@@ -173,42 +184,63 @@ const PeerChat = ({ isVisible, onToggle }: PeerChatProps) => {
                                 <p className="text-xs">Start the conversation!</p>
                             </div>
                         ) : (
-                            messages.map((message) => {
+                            messages.map((message, index) => {
                                 const isOwn = message.user_id === currentUserId;
+                                const isTeacher = message.sender_role === "teacher";
+
+                                // Grouping logic
+                                const previousMessage = messages[index - 1];
+                                const isSameSender = previousMessage && previousMessage.user_id === message.user_id;
+                                const showHeader = !isOwn && !isSameSender;
+
                                 return (
                                     <div
                                         key={message.id}
                                         className={cn(
-                                            "flex flex-col max-w-[80%]",
-                                            isOwn ? "ml-auto items-end" : "mr-auto items-start"
+                                            "flex flex-col max-w-[85%]",
+                                            isOwn ? "ml-auto items-end" : "mr-auto items-start",
+                                            index > 0 && isSameSender ? "mt-1" : "mt-3"
                                         )}
                                     >
-                                        {/* Sender info */}
-                                        {!isOwn && (
-                                            <div className="flex items-center mb-1">
+                                        {/* Sender info (only for first message in group) */}
+                                        {showHeader && (
+                                            <div className="flex items-center gap-2 mb-1 ml-1">
+                                                <Avatar className="w-5 h-5">
+                                                    <AvatarImage src={message.sender_avatar || undefined} />
+                                                    <AvatarFallback className="text-[9px] bg-muted text-muted-foreground">
+                                                        {message.sender_name?.substring(0, 2).toUpperCase()}
+                                                    </AvatarFallback>
+                                                </Avatar>
                                                 <span className="text-xs font-medium text-muted-foreground">
                                                     {message.sender_name}
                                                 </span>
-                                                {getRoleBadge(message.sender_role)}
+                                                {isTeacher && (
+                                                    <span className="text-[10px] font-bold bg-yellow-500/10 text-yellow-600 px-1.5 py-0.5 rounded-full border border-yellow-500/20">
+                                                        Teacher
+                                                    </span>
+                                                )}
                                             </div>
                                         )}
 
                                         {/* Message bubble */}
                                         <div
                                             className={cn(
-                                                "px-3 py-2 rounded-2xl text-sm break-words",
+                                                "px-4 py-2 text-sm break-words shadow-sm",
                                                 isOwn
-                                                    ? "bg-gradient-to-br from-primary to-accent text-primary-foreground rounded-br-md"
-                                                    : message.sender_role === "admin" || message.sender_role === "teacher"
-                                                        ? "bg-accent/20 text-foreground rounded-bl-md border border-accent/30"
-                                                        : "bg-muted text-foreground rounded-bl-md"
+                                                    ? "bg-gradient-to-br from-primary to-accent text-primary-foreground rounded-2xl rounded-tr-sm"
+                                                    : isTeacher
+                                                        ? "bg-yellow-50/80 dark:bg-yellow-900/10 text-foreground rounded-2xl rounded-tl-sm border border-yellow-200/50 dark:border-yellow-700/30"
+                                                        : "bg-muted text-foreground rounded-2xl rounded-tl-sm"
                                             )}
                                         >
                                             {message.content}
                                         </div>
 
-                                        {/* Timestamp */}
-                                        <span className="text-[10px] text-muted-foreground mt-0.5">
+                                        {/* Timestamp (only showing for last message in group or on hover - simplifying to always show for now but small) */}
+                                        <span className={cn(
+                                            "text-[9px] text-muted-foreground/70 mt-0.5 px-1",
+                                            isOwn ? "text-right" : "text-left"
+                                        )}>
                                             {formatTime(message.created_at)}
                                         </span>
                                     </div>
@@ -249,7 +281,7 @@ const PeerChat = ({ isVisible, onToggle }: PeerChatProps) => {
                             </button>
                         </div>
                         <p className="text-[10px] text-muted-foreground mt-1 text-center">
-                            {isCurrentUserAdmin ? "Responding as Admin" : `Chatting as ${currentUserName}`}
+                            {isCurrentUserTeacher ? "Responding as Teacher" : `Chatting as ${currentUserName}`}
                         </p>
                     </div>
                 </div>

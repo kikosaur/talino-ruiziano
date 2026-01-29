@@ -19,10 +19,10 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
-  isAdmin: boolean;
+  isTeacher: boolean;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, displayName?: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string) => Promise<{ data: any; error: Error | null }>;
+  signUp: (email: string, password: string, displayName?: string) => Promise<{ data: any; error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isTeacher, setIsTeacher] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
@@ -63,7 +63,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       setProfile(profileData);
 
-      // Check if user is admin
+      // Check if user is teacher
       const { data: roleData, error: roleError } = await supabase
         .from("user_roles")
         .select("role")
@@ -75,7 +75,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return;
       }
 
-      setIsAdmin(roleData?.role === "admin");
+      setIsTeacher(roleData?.role === "teacher");
     } catch (error) {
       console.error("Error in fetchProfile:", error);
     }
@@ -101,9 +101,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           }, 0);
         } else {
           setProfile(null);
-          setIsAdmin(false);
+          setIsTeacher(false);
         }
-        
+
         setIsLoading(false);
       }
     );
@@ -112,11 +112,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
       setSession(existingSession);
       setUser(existingSession?.user ?? null);
-      
+
       if (existingSession?.user) {
         fetchProfile(existingSession.user.id);
       }
-      
+
       setIsLoading(false);
     });
 
@@ -126,15 +126,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    return { error };
+    return { data, error };
   };
 
   const signUp = async (email: string, password: string, displayName?: string) => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -144,7 +144,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         },
       },
     });
-    return { error };
+    return { data, error };
   };
 
   const signOut = async () => {
@@ -152,7 +152,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setUser(null);
     setSession(null);
     setProfile(null);
-    setIsAdmin(false);
+    setIsTeacher(false);
   };
 
   return (
@@ -161,7 +161,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         user,
         session,
         profile,
-        isAdmin,
+        isTeacher,
         isLoading,
         signIn,
         signUp,

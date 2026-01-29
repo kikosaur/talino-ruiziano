@@ -52,7 +52,7 @@
     --maroon: 0 65% 30%;
     --maroon-dark: 0 69% 17%;
     --maroon-light: 0 45% 45%;
-    
+
     /* Gradients */
     --gradient-hero: linear-gradient(135deg, hsl(37 76% 81%) 0%, hsl(36 100% 97%) 100%);
     --gradient-card: linear-gradient(180deg, hsl(36 100% 97%) 0%, hsl(37 50% 92%) 100%);
@@ -123,49 +123,43 @@
     @apply bg-background text-foreground font-sans antialiased;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-serif;
   }
 }
 
 @layer components {
   .btn-gold {
-    @apply bg-accent text-accent-foreground font-semibold px-6 py-3 rounded-xl 
-           shadow-[var(--shadow-gold)] hover:brightness-110 
-           transition-all duration-300 hover:scale-105 active:scale-95;
+    @apply bg-accent text-accent-foreground font-semibold px-6 py-3 rounded-xl shadow-[var(--shadow-gold)] hover:brightness-110 transition-all duration-300 hover:scale-105 active:scale-95;
   }
 
   .btn-maroon {
-    @apply bg-primary text-primary-foreground font-semibold px-6 py-3 rounded-xl 
-           shadow-[var(--shadow-soft)] hover:brightness-110 
-           transition-all duration-300 hover:scale-105 active:scale-95;
+    @apply bg-primary text-primary-foreground font-semibold px-6 py-3 rounded-xl shadow-[var(--shadow-soft)] hover:brightness-110 transition-all duration-300 hover:scale-105 active:scale-95;
   }
 
   .card-elevated {
-    @apply bg-card rounded-2xl shadow-[var(--shadow-card)] 
-           border border-border/50 backdrop-blur-sm;
+    @apply bg-card rounded-2xl shadow-[var(--shadow-card)] border border-border/50 backdrop-blur-sm;
   }
 
   .badge-earned {
-    @apply bg-gradient-to-br from-accent to-[hsl(40,100%,55%)] 
-           text-accent-foreground px-4 py-2 rounded-full font-semibold
-           shadow-[var(--shadow-gold)] animate-pulse;
+    @apply bg-gradient-to-br from-accent to-yellow-500 text-accent-foreground px-4 py-2 rounded-full font-semibold shadow-[var(--shadow-gold)] animate-pulse;
   }
 
   .badge-locked {
-    @apply bg-muted text-muted-foreground px-4 py-2 rounded-full 
-           font-medium opacity-60;
+    @apply bg-muted text-muted-foreground px-4 py-2 rounded-full font-medium opacity-60;
   }
 
   .points-display {
-    @apply bg-gradient-to-r from-accent to-[hsl(40,100%,55%)] 
-           text-accent-foreground font-bold px-5 py-2 rounded-full
-           shadow-[var(--shadow-gold)] flex items-center gap-2;
+    @apply bg-gradient-to-r from-accent to-yellow-500 text-accent-foreground font-bold px-5 py-2 rounded-full shadow-[var(--shadow-gold)] flex items-center gap-2;
   }
 
   .nav-link {
-    @apply text-primary-foreground/80 hover:text-primary-foreground 
-           transition-colors duration-200 font-medium;
+    @apply text-primary-foreground/80 hover:text-primary-foreground transition-colors duration-200 font-medium;
   }
 
   .section-title {
@@ -173,9 +167,7 @@
   }
 
   .input-warm {
-    @apply bg-card border-2 border-border focus:border-primary 
-           rounded-xl px-4 py-3 transition-all duration-200
-           placeholder:text-muted-foreground;
+    @apply bg-card border-2 border-border focus:border-primary rounded-xl px-4 py-3 transition-all duration-200 placeholder:text-muted-foreground;
   }
 }
 
@@ -193,7 +185,7 @@
   }
 
   .text-gradient-gold {
-    @apply bg-gradient-to-r from-accent to-[hsl(40,100%,60%)] bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-accent to-yellow-400 bg-clip-text text-transparent;
   }
 
   .text-gradient-maroon {
@@ -202,30 +194,56 @@
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 @keyframes confetti {
-  0% { transform: scale(0) rotate(0deg); opacity: 0; }
-  50% { transform: scale(1.2) rotate(180deg); opacity: 1; }
-  100% { transform: scale(1) rotate(360deg); opacity: 1; }
+  0% {
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+
+  50% {
+    transform: scale(1.2) rotate(180deg);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1) rotate(360deg);
+    opacity: 1;
+  }
 }
 
 @keyframes confetti-fall {
-  0% { 
-    transform: translateY(-10vh) rotate(0deg); 
+  0% {
+    transform: translateY(-10vh) rotate(0deg);
     opacity: 1;
   }
-  100% { 
-    transform: translateY(100vh) rotate(720deg); 
+
+  100% {
+    transform: translateY(100vh) rotate(720deg);
     opacity: 0;
   }
 }
 
 @keyframes bounce-slow {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
 }
 
 .animate-confetti-fall {

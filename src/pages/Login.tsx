@@ -43,7 +43,7 @@ const Login = () => {
     const { data: { session } } = await supabase.auth.getSession();
 
     if (session?.user) {
-      // Check if user is admin
+      // Check if user is teacher
       const { data: roleData } = await supabase
         .from("user_roles")
         .select("role")
@@ -58,7 +58,7 @@ const Login = () => {
       setIsLoading(false);
 
       // Navigate based on role
-      if (roleData?.role === "admin") {
+      if (roleData?.role === "teacher") {
         navigate("/admin");
       } else {
         navigate("/dashboard");
@@ -176,9 +176,9 @@ const Login = () => {
                   <input type="checkbox" className="rounded border-border" />
                   <span className="text-muted-foreground">Remember me</span>
                 </label>
-                <a href="#" className="text-primary hover:underline font-medium">
+                <Link to="/forgot-password" className="text-primary hover:underline font-medium">
                   Forgot password?
-                </a>
+                </Link>
               </div>
 
               <Button
