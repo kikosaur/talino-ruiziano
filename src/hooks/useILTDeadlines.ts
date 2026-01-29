@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface ILTDeadline {
     id: string;
@@ -10,106 +12,162 @@ export interface ILTDeadline {
     updatedAt: string;
 }
 
-const STORAGE_KEY = "ilt_deadlines_v2";
-
-// Default deadlines if none exist
-const defaultDeadlines: ILTDeadline[] = [];
-
 export const useILTDeadlines = () => {
+    const { isTeacher } = useAuth();
     const [deadlines, setDeadlines] = useState<ILTDeadline[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Load deadlines from localStorage
-    const loadDeadlines = useCallback(() => {
+    const fetchDeadlines = useCallback(async () => {
         try {
-            const stored = localStorage.getItem(STORAGE_KEY);
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                // Migration: add default subject if missing
-                const migrated = parsed.map((d: any) => ({
-                    ...d,
-                    subject: d.subject || "General"
+            setIsLoading(true);
+            const { data, error } = await (supabase.from("ilt_deadlines") as any)
+                .select("*")
+                .order("deadline", { ascending: true });
+
+            if (error) throw error;
+
+            if (data) {
+                const mapped: ILTDeadline[] = data.map((d: any) => ({
+                    id: d.id,
+                    name: d.name,
+                    subject: d.subject || "General",
+                    description: d.description || "",
+                    deadline: d.deadline,
+                    createdAt: d.created_at,
+                    updatedAt: d.updated_at
                 }));
-                setDeadlines(migrated);
-            } else {
-                // Initialize with defaults
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultDeadlines));
-                setDeadlines(defaultDeadlines);
+                setDeadlines(mapped);
+
+                // Migration check: If we have data in localStorage and we are a teacher, sync it
+                if (isTeacher) {
+                    const stored = localStorage.getItem("ilt_deadlines_v2");
+                    if (stored) {
+                        try {
+                            const localDeadlines = JSON.parse(stored);
+                            if (localDeadlines.length > 0) {
+                                console.log("Migrating local deadlines to Supabase...");
+                                for (const local of localDeadlines) {
+                                    const exists = data.some((d: any) => d.name === local.name);
+                                    if (!exists) {
+                                        await (supabase.from("ilt_deadlines") as any).insert({
+                                            name: local.name,
+                                            subject: local.subject || "General",
+                                            description: local.description || "",
+                                            deadline: local.deadline
+                                        });
+                                    }
+                                }
+                                localStorage.removeItem("ilt_deadlines_v2");
+                                // We don't call fetchDeadlines recursively here to avoid loops, 
+                                // but the state will be updated on the next manual/auto refresh.
+                                // Actually, one refresh is fine.
+                            } else {
+                                localStorage.removeItem("ilt_deadlines_v2");
+                            }
+                        } catch (e) {
+                            console.error("Migration failed", e);
+                        }
+                    }
+                }
             }
         } catch (error) {
-            console.error("Error loading deadlines:", error);
-            setDeadlines(defaultDeadlines);
+            console.error("Error loading deadlines from Supabase:", error);
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [isTeacher]);
 
     useEffect(() => {
-        loadDeadlines();
-    }, [loadDeadlines]);
+        fetchDeadlines();
+    }, [fetchDeadlines]);
 
-    // Save to localStorage whenever deadlines change
-    const saveDeadlines = useCallback((newDeadlines: ILTDeadline[]) => {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newDeadlines));
-        setDeadlines(newDeadlines);
-    }, []);
-
-    // Add a new deadline
     const addDeadline = useCallback(
-        (name: string, subject: string, description: string, deadline: Date): ILTDeadline => {
-            const newDeadline: ILTDeadline = {
-                id: `ilt-${Date.now()}`,
-                name,
-                subject,
-                description,
-                deadline: deadline.toISOString(),
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-            };
+        async (name: string, subject: string, description: string, deadline: Date): Promise<ILTDeadline | null> => {
+            if (!isTeacher) return null;
 
-            const updated = [...deadlines, newDeadline].sort(
-                (a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
-            );
-            saveDeadlines(updated);
-            return newDeadline;
+            try {
+                const { data, error } = await (supabase.from("ilt_deadlines") as any)
+                    .insert({
+                        name,
+                        subject,
+                        description,
+                        deadline: deadline.toISOString(),
+                    })
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                const newDeadline: ILTDeadline = {
+                    id: data.id,
+                    name: data.name,
+                    subject: data.subject,
+                    description: data.description,
+                    deadline: data.deadline,
+                    createdAt: data.created_at,
+                    updatedAt: data.updated_at
+                };
+
+                setDeadlines(prev => [...prev, newDeadline].sort(
+                    (a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
+                ));
+                return newDeadline;
+            } catch (error) {
+                console.error("Error adding deadline:", error);
+                return null;
+            }
         },
-        [deadlines, saveDeadlines]
+        [isTeacher]
     );
 
-    // Update an existing deadline
     const updateDeadline = useCallback(
-        (id: string, updates: Partial<Omit<ILTDeadline, "id" | "createdAt">>): boolean => {
-            const index = deadlines.findIndex((d) => d.id === id);
-            if (index === -1) return false;
+        async (id: string, updates: Partial<Omit<ILTDeadline, "id" | "createdAt">>): Promise<boolean> => {
+            if (!isTeacher) return false;
 
-            const updated = [...deadlines];
-            updated[index] = {
-                ...updated[index],
-                ...updates,
-                updatedAt: new Date().toISOString(),
-            };
+            try {
+                const { error } = await (supabase.from("ilt_deadlines") as any)
+                    .update({
+                        name: updates.name,
+                        subject: updates.subject,
+                        description: updates.description,
+                        deadline: updates.deadline,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq("id", id);
 
-            // Re-sort by deadline
-            updated.sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
-            saveDeadlines(updated);
-            return true;
+                if (error) throw error;
+
+                await fetchDeadlines();
+                return true;
+            } catch (error) {
+                console.error("Error updating deadline:", error);
+                return false;
+            }
         },
-        [deadlines, saveDeadlines]
+        [isTeacher, fetchDeadlines]
     );
 
-    // Delete a deadline
     const deleteDeadline = useCallback(
-        (id: string): boolean => {
-            const updated = deadlines.filter((d) => d.id !== id);
-            if (updated.length === deadlines.length) return false;
+        async (id: string): Promise<boolean> => {
+            if (!isTeacher) return false;
 
-            saveDeadlines(updated);
-            return true;
+            try {
+                const { error } = await (supabase.from("ilt_deadlines") as any)
+                    .delete()
+                    .eq("id", id);
+
+                if (error) throw error;
+
+                setDeadlines(prev => prev.filter(d => d.id !== id));
+                return true;
+            } catch (error) {
+                console.error("Error deleting deadline:", error);
+                return false;
+            }
         },
-        [deadlines, saveDeadlines]
+        [isTeacher]
     );
 
-    // Get a single deadline by ID
     const getDeadline = useCallback(
         (id: string): ILTDeadline | undefined => {
             return deadlines.find((d) => d.id === id);
@@ -117,10 +175,25 @@ export const useILTDeadlines = () => {
         [deadlines]
     );
 
-    // Reset to defaults
-    const resetToDefaults = useCallback(() => {
-        saveDeadlines(defaultDeadlines);
-    }, [saveDeadlines]);
+    const resetToDefaults = useCallback(async () => {
+        if (!isTeacher) return;
+        try {
+            const { error: deleteError } = await (supabase.from("ilt_deadlines") as any).delete().neq("id", "00000000-0000-0000-0000-000000000000");
+
+            if (deleteError) throw deleteError;
+
+            const defaults = [
+                { name: 'Math Week 1', subject: 'Mathematics', description: 'Basic algebraic expressions', deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() },
+                { name: 'English Essay', subject: 'English', description: 'Write a 500-word essay on a classic novel', deadline: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString() },
+                { name: 'Science Lab', subject: 'Science', description: 'Chemical reaction report', deadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() }
+            ];
+
+            await (supabase.from("ilt_deadlines") as any).insert(defaults);
+            await fetchDeadlines();
+        } catch (error) {
+            console.error("Error resetting deadlines:", error);
+        }
+    }, [isTeacher, fetchDeadlines]);
 
     return {
         deadlines,
@@ -130,6 +203,6 @@ export const useILTDeadlines = () => {
         deleteDeadline,
         getDeadline,
         resetToDefaults,
-        refreshDeadlines: loadDeadlines,
+        refreshDeadlines: fetchDeadlines,
     };
 };

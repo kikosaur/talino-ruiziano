@@ -1,5 +1,4 @@
 import { FileText, Users, Trophy, Clock, Loader2 } from "lucide-react";
-import AdminSidebar from "@/components/admin/AdminSidebar";
 import SubmissionsTable from "@/components/admin/SubmissionsTable";
 import { useSubmissions } from "@/hooks/useSubmissions";
 import { useToast } from "@/hooks/use-toast";
@@ -108,85 +107,78 @@ const AdminSubmissions = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <AdminSidebar />
-        <main className="ml-20 lg:ml-64 p-6 lg:p-8 flex items-center justify-center min-h-screen">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="w-12 h-12 text-accent animate-spin" />
-            <p className="text-muted-foreground">Loading submissions...</p>
-          </div>
-        </main>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-12 h-12 text-accent animate-spin" />
+          <p className="text-muted-foreground">Loading submissions...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <AdminSidebar />
+    <main className="p-6 lg:p-8 transition-all duration-300">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="space-y-2">
+          <h1 className="section-title text-3xl">Student Submissions</h1>
+          <p className="text-muted-foreground text-lg">
+            View and manage all ILT submissions from students
+          </p>
+        </div>
 
-      <main className="ml-20 lg:ml-64 p-6 lg:p-8 transition-all duration-300">
-        <div className="max-w-7xl mx-auto space-y-8">
-          {/* Header */}
-          <div className="space-y-2">
-            <h1 className="section-title text-3xl">Student Submissions</h1>
-            <p className="text-muted-foreground text-lg">
-              View and manage all ILT submissions from students
-            </p>
-          </div>
-
-          {/* Stats cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              {
-                icon: FileText,
-                label: "Total Submissions",
-                value: stats.totalSubmissions,
-                color: "bg-accent",
-              },
-              {
-                icon: Clock,
-                label: "Pending Review",
-                value: stats.pendingReview,
-                color: "bg-secondary",
-              },
-              {
-                icon: Users,
-                label: "Active Students",
-                value: stats.totalStudents,
-                color: "bg-primary",
-              },
-              {
-                icon: Trophy,
-                label: "Points Awarded",
-                value: stats.totalPoints,
-                color: "bg-accent",
-              },
-            ].map((stat) => (
-              <div key={stat.label} className="card-elevated p-4 md:p-6">
-                <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 ${stat.color} rounded-xl flex items-center justify-center shadow-lg`}>
-                    <stat.icon className="w-6 h-6 text-primary-foreground" />
-                  </div>
-                  <div>
-                    <p className="text-2xl md:text-3xl font-bold text-foreground">
-                      {stat.value.toLocaleString()}
-                    </p>
-                    <p className="text-sm text-muted-foreground">{stat.label}</p>
-                  </div>
+        {/* Stats cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            {
+              icon: FileText,
+              label: "Total Submissions",
+              value: stats.totalSubmissions,
+              color: "bg-accent",
+            },
+            {
+              icon: Clock,
+              label: "Pending Review",
+              value: stats.pendingReview,
+              color: "bg-secondary",
+            },
+            {
+              icon: Users,
+              label: "Active Students",
+              value: stats.totalStudents,
+              color: "bg-primary",
+            },
+            {
+              icon: Trophy,
+              label: "Points Awarded",
+              value: stats.totalPoints,
+              color: "bg-accent",
+            },
+          ].map((stat) => (
+            <div key={stat.label} className="card-elevated p-4 md:p-6">
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 ${stat.color} rounded-xl flex items-center justify-center shadow-lg`}>
+                  <stat.icon className="w-6 h-6 text-primary-foreground" />
+                </div>
+                <div>
+                  <p className="text-2xl md:text-3xl font-bold text-foreground">
+                    {stat.value.toLocaleString()}
+                  </p>
+                  <p className="text-sm text-muted-foreground">{stat.label}</p>
                 </div>
               </div>
-            ))}
-          </div>
-
-          {/* Submissions table */}
-          <SubmissionsTable
-            submissions={tableSubmissions}
-            onExportCSV={exportToCSV}
-            onUpdateSubmission={handleUpdateSubmission}
-          />
+            </div>
+          ))}
         </div>
-      </main>
-    </div>
+
+        {/* Submissions table */}
+        <SubmissionsTable
+          submissions={tableSubmissions}
+          onExportCSV={exportToCSV}
+          onUpdateSubmission={handleUpdateSubmission}
+        />
+      </div>
+    </main>
   );
 };
 

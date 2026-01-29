@@ -1,217 +1,352 @@
 import { useState, useEffect } from "react";
-import {
-    Users,
-    Search,
-    MoreHorizontal,
-    Mail,
-    GraduationCap,
-    Loader2
-} from "lucide-react";
-import AdminSidebar from "@/components/admin/AdminSidebar";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Users, Search, Mail, Trophy, BookOpen, Loader2, MessageCircle, Download, Filter, X, TrendingUp, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { useOutletContext } from "react-router-dom";
 
 interface StudentProfile {
-    id: string;
-    email: string;
-    display_name: string;
-    avatar_url: string | null;
-    level: number;
-    total_points: number;
-    streak_days: number;
     user_id: string;
+    display_name: string | null;
+    email: string | null;
+    avatar_url: string | null;
+    total_points: number;
+    level: number;
+    streak_days: number;
+}
+
+interface AdminLayoutContext {
+    toggleChat: (recipientId?: string) => void;
 }
 
 const AdminStudents = () => {
+    const { toast } = useToast();
+    const { toggleChat } = useOutletContext<AdminLayoutContext>();
     const [students, setStudents] = useState<StudentProfile[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
+    const [selectedStudent, setSelectedStudent] = useState<StudentProfile | null>(null);
+    const [sortBy, setSortBy] = useState<"name" | "points" | "level">("name");
 
     useEffect(() => {
-        fetchStudents();
-    }, []);
+        const fetchStudents = async () => {
+            try {
+                setIsLoading(true);
+                // Fetch only students (filter by role)
+                const { data: roleData, error: roleError } = await supabase
+                    .from("user_roles")
+                    .select("user_id")
+                    .eq("role", "student");
 
-    const fetchStudents = async () => {
-        try {
-            // First get all user IDs with role 'student'
-            const { data: roleData, error: roleError } = await supabase
-                .from("user_roles")
-                .select("user_id")
-                .eq("role", "student");
+                if (roleError) throw roleError;
 
-            if (roleError) throw roleError;
+                if (roleData && roleData.length > 0) {
+                    const studentIds = roleData.map(r => r.user_id);
+                    const { data, error } = await supabase
+                        .from("profiles")
+                        .select("*")
+                        .in("user_id", studentIds)
+                        .order("display_name", { ascending: true });
 
-            if (roleData && roleData.length > 0) {
-                const studentIds = roleData.map(r => r.user_id);
-
-                // Then get profiles for these students
-                const { data: profiles, error: profileError } = await supabase
-                    .from("profiles")
-                    .select("*")
-                    .in("user_id", studentIds);
-
-                if (profileError) throw profileError;
-
-                // Sort by name
-                const sortedProfiles = (profiles || []).sort((a, b) =>
-                    (a.display_name || "").localeCompare(b.display_name || "")
-                );
-
-                // Map to include user_id if needed, though profiles has user_id
-                setStudents(sortedProfiles as StudentProfile[]);
-            } else {
-                setStudents([]);
+                    if (error) throw error;
+                    setStudents(data as StudentProfile[]);
+                } else {
+                    setStudents([]);
+                }
+            } catch (error) {
+                console.error("Error fetching students:", error);
+                toast({
+                    title: "Error",
+                    description: "Failed to load student directory.",
+                    variant: "destructive",
+                });
+            } finally {
+                setIsLoading(false);
             }
-        } catch (error) {
-            console.error("Error fetching students:", error);
-        } finally {
-            setIsLoading(false);
-        }
+        };
+
+        fetchStudents();
+    }, [toast]);
+
+    const filteredAndSortedStudents = students
+        .filter(student =>
+        (student.display_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            student.email?.toLowerCase().includes(searchQuery.toLowerCase()))
+        )
+        .sort((a, b) => {
+            switch (sortBy) {
+                case "points":
+                    return b.total_points - a.total_points;
+                case "level":
+                    return b.level - a.level;
+                case "name":
+                default:
+                    return (a.display_name || "").localeCompare(b.display_name || "");
+            }
+        });
+
+    const handleExportCSV = () => {
+        const headers = ["Name", "Email", "Points", "Level", "Streak"];
+        const rows = filteredAndSortedStudents.map(s => [
+            s.display_name || "Unknown",
+            s.email || "",
+            s.total_points.toString(),
+            s.level.toString(),
+            s.streak_days.toString(),
+        ]);
+
+        const csvContent = [
+            headers.join(","),
+            ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+        ].join("\n");
+
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `students_export_${new Date().toISOString().split("T")[0]}.csv`);
+        link.style.visibility = "hidden";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        toast({
+            title: "Export Successful! 📊",
+            description: `Exported ${filteredAndSortedStudents.length} students to CSV.`,
+        });
     };
 
-    const filteredStudents = students.filter(student =>
-        (student.display_name?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
-        (student.email?.toLowerCase() || "").includes(searchQuery.toLowerCase())
-    );
+    const handleMessageStudent = (student: StudentProfile) => {
+        // Open chat with this specific student
+        toggleChat(student.user_id);
+        toast({
+            title: "Opening Private Chat",
+            description: `Starting conversation with ${student.display_name || "this student"}.`,
+        });
+    };
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-background">
-                <AdminSidebar />
-                <main className="ml-20 lg:ml-64 p-6 lg:p-8 flex items-center justify-center min-h-screen">
-                    <div className="flex flex-col items-center gap-4">
-                        <Loader2 className="w-12 h-12 text-accent animate-spin" />
-                        <p className="text-muted-foreground">Loading students...</p>
-                    </div>
-                </main>
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="w-12 h-12 text-accent animate-spin" />
+                    <p className="text-muted-foreground">Loading student directory...</p>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-background">
-            <AdminSidebar />
-
-            <main className="ml-20 lg:ml-64 p-6 lg:p-8 transition-all duration-300">
-                <div className="max-w-7xl mx-auto space-y-8">
-                    {/* Header */}
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div className="space-y-1">
-                            <h1 className="section-title text-3xl flex items-center gap-3">
-                                <Users className="w-8 h-8 text-accent" />
-                                Enrolled Students
-                            </h1>
-                            <p className="text-muted-foreground">
-                                Manage your class roster and view student progress.
-                            </p>
-                        </div>
+        <main className="p-6 lg:p-8 transition-all duration-300">
+            <div className="max-w-7xl mx-auto space-y-8">
+                {/* Header */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                        <h1 className="section-title text-3xl flex items-center gap-3">
+                            <Users className="w-8 h-8 text-primary" />
+                            Student Directory
+                        </h1>
+                        <p className="text-muted-foreground">
+                            {filteredAndSortedStudents.length} students enrolled in your program
+                        </p>
                     </div>
 
-                    {/* Search and Filters */}
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="relative flex-1 max-w-md">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                            <Input
-                                placeholder="Search by name or email..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-10 input-warm"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Students List */}
-                    <div className="card-elevated overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="border-b border-border bg-muted/30">
-                                        <th className="px-6 py-4 text-left font-semibold text-foreground">Name</th>
-                                        <th className="px-6 py-4 text-left font-semibold text-foreground hidden md:table-cell">Level</th>
-                                        <th className="px-6 py-4 text-left font-semibold text-foreground hidden sm:table-cell">Points</th>
-                                        <th className="px-6 py-4 text-left font-semibold text-foreground hidden lg:table-cell">Streak</th>
-                                        <th className="px-6 py-4 text-right font-semibold text-foreground">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredStudents.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
-                                                No students found matching your search.
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        filteredStudents.map((student, index) => (
-                                            <tr
-                                                key={student.id}
-                                                className={`border-b border-border/50 hover:bg-muted/20 transition-colors ${index % 2 === 0 ? "bg-card" : "bg-card/50"
-                                                    }`}
-                                            >
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                                                            {(student.display_name?.[0] || student.email[0]).toUpperCase()}
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-medium text-foreground">{student.display_name || "Unknown Name"}</p>
-                                                            <p className="text-sm text-muted-foreground flex items-center gap-1">
-                                                                <Mail className="w-3 h-3" />
-                                                                {student.email}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 hidden md:table-cell">
-                                                    <div className="flex items-center gap-2">
-                                                        <GraduationCap className="w-4 h-4 text-accent" />
-                                                        <span className="font-medium">Lvl {student.level}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 hidden sm:table-cell">
-                                                    <span className="text-accent font-bold">{student.total_points.toLocaleString()}</span>
-                                                </td>
-                                                <td className="px-6 py-4 hidden lg:table-cell">
-                                                    <span className="bg-orange-500/10 text-orange-600 px-2 py-1 rounded-full text-xs font-bold">
-                                                        {student.streak_days} Days 🔥
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                                                <span className="sr-only">Open menu</span>
-                                                                <MoreHorizontal className="h-4 w-4" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(student.email)}>
-                                                                Copy Email
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuSeparator />
-                                                            <DropdownMenuItem>View Details</DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                    <div className="flex gap-2">
+                        <Button onClick={handleExportCSV} variant="outline" className="gap-2">
+                            <Download className="w-4 h-4" />
+                            Export CSV
+                        </Button>
                     </div>
                 </div>
-            </main>
-        </div>
+
+                {/* Search and Filters */}
+                <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                        <input
+                            type="text"
+                            placeholder="Search by name or email..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-12 pr-4 py-3 rounded-2xl border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
+                        />
+                    </div>
+                    <div className="flex gap-2">
+                        <Button
+                            variant={sortBy === "name" ? "default" : "outline"}
+                            onClick={() => setSortBy("name")}
+                            className="gap-2"
+                        >
+                            <Filter className="w-4 h-4" />
+                            Name
+                        </Button>
+                        <Button
+                            variant={sortBy === "points" ? "default" : "outline"}
+                            onClick={() => setSortBy("points")}
+                            className="gap-2"
+                        >
+                            <Trophy className="w-4 h-4" />
+                            Points
+                        </Button>
+                        <Button
+                            variant={sortBy === "level" ? "default" : "outline"}
+                            onClick={() => setSortBy("level")}
+                            className="gap-2"
+                        >
+                            <TrendingUp className="w-4 h-4" />
+                            Level
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Student Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredAndSortedStudents.length === 0 ? (
+                        <div className="col-span-full py-20 text-center card-elevated">
+                            <Users className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                            <p className="text-xl font-medium text-muted-foreground">No students found</p>
+                        </div>
+                    ) : (
+                        filteredAndSortedStudents.map((student) => (
+                            <div
+                                key={student.user_id}
+                                className="card-elevated group hover:scale-[1.02] transition-all cursor-pointer"
+                                onClick={() => setSelectedStudent(student)}
+                            >
+                                <div className="p-6 flex flex-col gap-4">
+                                    <div className="flex items-start gap-4">
+                                        <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center overflow-hidden border-2 border-primary/20 shrink-0">
+                                            {student.avatar_url ? (
+                                                <img src={student.avatar_url} alt={student.display_name || ""} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <span className="text-2xl font-bold text-primary">
+                                                    {(student.display_name?.[0] || "U").toUpperCase()}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <h3 className="font-serif font-bold text-xl truncate group-hover:text-primary transition-colors">
+                                                {student.display_name || "Anonymous Student"}
+                                            </h3>
+                                            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                                                <Mail className="w-3.5 h-3.5" />
+                                                <span className="truncate">{student.email}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-1 bg-accent/10 px-3 py-1.5 rounded-lg border border-accent/20">
+                                            <Trophy className="w-4 h-4 text-accent" />
+                                            <span className="text-sm font-bold text-accent">{student.total_points}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1 bg-secondary/10 px-3 py-1.5 rounded-lg border border-secondary/20">
+                                            <BookOpen className="w-4 h-4 text-secondary" />
+                                            <span className="text-sm font-bold text-secondary">Lvl {student.level}</span>
+                                        </div>
+                                        {student.streak_days > 0 && (
+                                            <div className="flex items-center gap-1 bg-orange-500/10 px-3 py-1.5 rounded-lg border border-orange-500/20">
+                                                <span className="text-sm font-bold text-orange-600">{student.streak_days}🔥</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <Button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleMessageStudent(student);
+                                        }}
+                                        variant="outline"
+                                        className="w-full gap-2 hover:bg-primary/10 hover:border-primary"
+                                    >
+                                        <MessageCircle className="w-4 h-4" />
+                                        Message Student
+                                    </Button>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                {/* Student Detail Modal */}
+                {selectedStudent && (
+                    <div
+                        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                        onClick={() => setSelectedStudent(null)}
+                    >
+                        <div
+                            className="bg-card rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="sticky top-0 bg-card border-b border-border p-6 flex items-center justify-between">
+                                <h2 className="text-2xl font-bold font-serif">Student Profile</h2>
+                                <button
+                                    onClick={() => setSelectedStudent(null)}
+                                    className="w-10 h-10 rounded-xl hover:bg-muted flex items-center justify-center transition-colors"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <div className="p-6 space-y-6">
+                                <div className="flex items-start gap-6">
+                                    <div className="w-24 h-24 rounded-2xl bg-primary/10 flex items-center justify-center overflow-hidden border-2 border-primary/20 shrink-0">
+                                        {selectedStudent.avatar_url ? (
+                                            <img src={selectedStudent.avatar_url} alt={selectedStudent.display_name || ""} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <span className="text-4xl font-bold text-primary">
+                                                {(selectedStudent.display_name?.[0] || "U").toUpperCase()}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="text-2xl font-bold font-serif mb-2">{selectedStudent.display_name || "Anonymous Student"}</h3>
+                                        <div className="flex items-center gap-2 text-muted-foreground mb-4">
+                                            <Mail className="w-4 h-4" />
+                                            <span>{selectedStudent.email}</span>
+                                        </div>
+                                        <Button
+                                            onClick={() => {
+                                                handleMessageStudent(selectedStudent);
+                                                setSelectedStudent(null);
+                                            }}
+                                            className="btn-gold gap-2"
+                                        >
+                                            <MessageCircle className="w-4 h-4" />
+                                            Send Message
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div className="card-elevated p-4 text-center">
+                                        <Trophy className="w-8 h-8 text-accent mx-auto mb-2" />
+                                        <p className="text-2xl font-bold text-accent">{selectedStudent.total_points}</p>
+                                        <p className="text-sm text-muted-foreground">Total Points</p>
+                                    </div>
+                                    <div className="card-elevated p-4 text-center">
+                                        <BookOpen className="w-8 h-8 text-secondary mx-auto mb-2" />
+                                        <p className="text-2xl font-bold text-secondary">Level {selectedStudent.level}</p>
+                                        <p className="text-sm text-muted-foreground">Current Level</p>
+                                    </div>
+                                    <div className="card-elevated p-4 text-center">
+                                        <Award className="w-8 h-8 text-orange-600 mx-auto mb-2" />
+                                        <p className="text-2xl font-bold text-orange-600">{selectedStudent.streak_days}</p>
+                                        <p className="text-sm text-muted-foreground">Day Streak 🔥</p>
+                                    </div>
+                                </div>
+
+                                <div className="bg-accent/5 border border-accent/20 rounded-xl p-4">
+                                    <p className="text-sm text-muted-foreground">
+                                        <strong className="text-foreground">Note:</strong> Additional student data such as submissions, badges, and activity history will be available in future updates.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </main>
     );
 };
 

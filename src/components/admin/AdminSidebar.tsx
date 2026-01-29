@@ -5,11 +5,11 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  BookOpen,
   ChevronLeft,
   ChevronRight,
   Home,
-  Calendar
+  Calendar,
+  MessageCircle
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -25,7 +25,11 @@ const menuItems = [
   { icon: Settings, label: "Settings", path: "/admin/settings" },
 ];
 
-const AdminSidebar = () => {
+interface AdminSidebarProps {
+  onChatToggle?: () => void;
+}
+
+const AdminSidebar = ({ onChatToggle }: AdminSidebarProps) => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -92,6 +96,19 @@ const AdminSidebar = () => {
             </Link>
           );
         })}
+
+        <div className="my-2 border-t border-background/20" />
+
+        {/* Peer Chat - Button to toggle floating chat */}
+        <button
+          onClick={onChatToggle}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:bg-background/10 text-background/80"
+        >
+          <MessageCircle className="w-5 h-5 flex-shrink-0" />
+          {!collapsed && (
+            <span className="font-medium truncate">Peer Chat</span>
+          )}
+        </button>
       </nav>
 
       {/* Bottom section */}

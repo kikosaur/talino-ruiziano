@@ -8,6 +8,7 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { useEffect } from "react";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import StudentLayout from "@/layouts/StudentLayout";
+import AdminLayout from "@/layouts/AdminLayout";
 
 // Pages
 import Landing from "./pages/Landing";
@@ -76,54 +77,23 @@ const App = () => (
               <Route path="todos" element={<Todos />} />
               <Route path="settings" element={<StudentSettings />} />
             </Route>
+            {/* Admin Routes with Layout */}
             <Route
               path="/admin"
               element={
                 <ProtectedRoute requireTeacher>
-                  <AdminDashboard />
+                  <AdminLayout />
                 </ProtectedRoute>
               }
-            />
-            <Route
-              path="/admin/submissions"
-              element={
-                <ProtectedRoute requireTeacher>
-                  <AdminSubmissions />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/deadlines"
-              element={
-                <ProtectedRoute requireTeacher>
-                  <AdminDeadlines />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/students"
-              element={
-                <ProtectedRoute requireTeacher>
-                  <AdminStudents />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/analytics"
-              element={
-                <ProtectedRoute requireTeacher>
-                  <AdminAnalytics />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/settings"
-              element={
-                <ProtectedRoute requireTeacher>
-                  <AdminSettings />
-                </ProtectedRoute>
-              }
-            />
+            >
+              <Route index element={<AdminDashboard />} />
+              <Route path="submissions" element={<AdminSubmissions />} />
+              <Route path="deadlines" element={<AdminDeadlines />} />
+              <Route path="students" element={<AdminStudents />} />
+              <Route path="analytics" element={<AdminAnalytics />} />
+              <Route path="settings" element={<AdminSettings />} />
+            </Route>
+
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
