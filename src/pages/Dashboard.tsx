@@ -3,6 +3,7 @@ import WelcomeCard from "@/components/dashboard/WelcomeCard";
 import BadgeGallery from "@/components/dashboard/BadgeGallery";
 import QuickActions from "@/components/dashboard/QuickActions";
 import RecentActivity from "@/components/dashboard/RecentActivity";
+import TodoList from "@/components/dashboard/TodoList";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 
@@ -42,9 +43,10 @@ const Dashboard = () => {
               <BadgeGallery />
             </div>
 
-            {/* Right Column - Quick Actions */}
+            {/* Right Column - Quick Actions & Todo List */}
             <div className="space-y-6">
               <QuickActions />
+              <TodoList />
             </div>
           </div>
 
