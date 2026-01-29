@@ -2,21 +2,34 @@ import { Trophy, Flame, Target } from "lucide-react";
 
 interface WelcomeCardProps {
   studentName: string;
+  avatarUrl?: string | null;
   points: number;
   streak: number;
   level: number;
+  submittedCount?: number;
+  totalCount?: number;
 }
 
-const WelcomeCard = ({ studentName, points, streak, level }: WelcomeCardProps) => {
-  const avatarEmoji = "🎓"; // Could be customizable later
-
+const WelcomeCard = ({
+  studentName,
+  avatarUrl,
+  points,
+  streak,
+  level,
+  submittedCount = 0,
+  totalCount = 0
+}: WelcomeCardProps) => {
   return (
     <div className="card-elevated p-6 md:p-8">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         {/* Left side - Avatar and greeting */}
         <div className="flex items-center gap-4">
-          <div className="w-20 h-20 bg-gradient-to-br from-accent to-[hsl(40,100%,55%)] rounded-2xl flex items-center justify-center shadow-[var(--shadow-gold)] text-4xl animate-float">
-            {avatarEmoji}
+          <div className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-[var(--shadow-gold)] overflow-hidden bg-gradient-to-br from-accent to-[hsl(40,100%,55%)] shrink-0 animate-float">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-4xl">🎓</span>
+            )}
           </div>
           <div>
             <p className="text-muted-foreground text-sm">Welcome back,</p>
@@ -44,7 +57,7 @@ const WelcomeCard = ({ studentName, points, streak, level }: WelcomeCardProps) =
           {/* Tasks completed */}
           <div className="flex items-center gap-2 bg-card border border-border px-5 py-2 rounded-full shadow-sm">
             <Target className="w-5 h-5 text-secondary" />
-            <span className="font-medium text-foreground">12/15 ILTs</span>
+            <span className="font-medium text-foreground">{submittedCount}/{totalCount} ILTs</span>
           </div>
         </div>
       </div>

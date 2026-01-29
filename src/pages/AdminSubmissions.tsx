@@ -11,6 +11,7 @@ interface TableSubmission {
   studentEmail: string;
   iltName: string;
   fileName: string;
+  fileUrl: string; // Added fileUrl
   fileType: string;
   fileSize: number;
   submittedAt: Date;
@@ -30,6 +31,7 @@ const AdminSubmissions = () => {
     studentEmail: s.student_email || "",
     iltName: s.ilt_name,
     fileName: s.file_name,
+    fileUrl: s.file_url, // Map file_url
     fileType: s.file_type,
     fileSize: s.file_size,
     submittedAt: new Date(s.submitted_at),
@@ -177,8 +179,8 @@ const AdminSubmissions = () => {
           </div>
 
           {/* Submissions table */}
-          <SubmissionsTable 
-            submissions={tableSubmissions} 
+          <SubmissionsTable
+            submissions={tableSubmissions}
             onExportCSV={exportToCSV}
             onUpdateSubmission={handleUpdateSubmission}
           />

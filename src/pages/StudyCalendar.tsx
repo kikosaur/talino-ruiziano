@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, isBefore, addMonths, subMonths } from "date-fns";
 import { ChevronLeft, ChevronRight, Calendar, FileText, Clock, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
-import DashboardSidebar from "@/components/dashboard/Sidebar";
 import { Button } from "@/components/ui/button";
 import { useSubmissions } from "@/hooks/useSubmissions";
 import { useILTDeadlines } from "@/hooks/useILTDeadlines";
@@ -105,7 +104,6 @@ const StudyCalendar = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <DashboardSidebar />
         <main className="ml-20 lg:ml-64 p-6 lg:p-8 flex items-center justify-center min-h-screen">
           <div className="flex flex-col items-center gap-4">
             <Loader2 className="w-12 h-12 text-accent animate-spin" />
@@ -118,7 +116,6 @@ const StudyCalendar = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardSidebar />
 
       <main className="ml-20 lg:ml-64 p-6 lg:p-8 transition-all duration-300">
         <div className="max-w-7xl mx-auto space-y-6">

@@ -30,6 +30,11 @@ const ProtectedRoute = ({ children, requireTeacher = false }: ProtectedRouteProp
     return <Navigate to="/dashboard" replace />;
   }
 
+  // Enforce strict separation: Teachers cannot access student dashboard
+  if (!requireTeacher && isTeacher) {
+    return <Navigate to="/admin" replace />;
+  }
+
   return <>{children}</>;
 };
 

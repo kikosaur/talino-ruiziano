@@ -64,16 +64,26 @@ const DashboardSidebar = ({ onMusicToggle, onChatToggle }: DashboardSidebarProps
 
       {/* User info */}
       {!collapsed && profile && (
-        <div className="px-4 py-3 border-b border-primary-foreground/20">
-          <p className="text-sm font-medium truncate">{profile.display_name || "Student"}</p>
-          <p className="text-xs text-primary-foreground/60 truncate">{profile.email}</p>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded-full">
-              {profile.total_points} pts
-            </span>
-            <span className="text-xs bg-primary-foreground/10 px-2 py-0.5 rounded-full">
-              Level {profile.level}
-            </span>
+        <div className="px-4 py-3 border-b border-primary-foreground/20 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center overflow-hidden border border-accent/30 shrink-0">
+            {profile.avatar_url ? (
+              <img src={profile.avatar_url} alt={profile.display_name || "User"} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-sm font-bold text-accent">
+                {(profile.display_name?.[0] || "U").toUpperCase()}
+              </span>
+            )}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium truncate">{profile.display_name || "Student"}</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-[10px] bg-accent/20 text-accent px-1.5 py-0.5 rounded-full">
+                {profile.total_points} pts
+              </span>
+              <span className="text-[10px] bg-primary-foreground/10 px-1.5 py-0.5 rounded-full">
+                Lvl {profile.level}
+              </span>
+            </div>
           </div>
         </div>
       )}
@@ -100,6 +110,8 @@ const DashboardSidebar = ({ onMusicToggle, onChatToggle }: DashboardSidebarProps
             </Link>
           );
         })}
+
+        <div className="my-2 border-t border-primary-foreground/20" />
 
         {/* Music Corner - Button to toggle floating player */}
         <button

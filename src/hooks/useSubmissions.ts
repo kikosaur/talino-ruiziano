@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 export interface Submission {
   id: string;
@@ -22,6 +23,7 @@ export interface Submission {
 
 export const useSubmissions = (isTeacherView = false) => {
   const { user, isTeacher } = useAuth();
+  const { toast } = useToast();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -123,6 +125,51 @@ export const useSubmissions = (isTeacherView = false) => {
           .from("profiles")
           .update({ total_points: profile.total_points + 50 })
           .eq("user_id", user.id);
+
+        // --- Badge Check Logic ---
+        const newPoints = profile.total_points + 50;
+        const newSubmissionCount = (submissions?.length || 0) + 1;
+
+        // Fetch all badges and user's earned badges
+        const { data: allBadges } = await supabase.from('badges').select('*');
+        const { data: userBadges } = await supabase.from('user_badges').select('badge_id').eq('user_id', user.id);
+        const earnedBadgeIds = new Set(userBadges?.map(b => b.badge_id));
+
+        const newBadges = allBadges?.filter(badge => {
+          if (earnedBadgeIds.has(badge.id)) return false;
+
+          let earned = false;
+          // Check points threshold
+          if (badge.required_points && newPoints >= badge.required_points) {
+            // For points badges, we want exact matches or milestones. 
+            // Typically ">= value". 
+            // But if I have a "100 points" badge and I have 150, I should have it.
+            // The loop filters out already earned ones, so ">= " is safe.
+            earned = true;
+          }
+
+          // Check submission count threshold
+          if (badge.required_submissions && newSubmissionCount >= badge.required_submissions) {
+            earned = true;
+          }
+
+          return earned;
+        }) || [];
+
+        for (const badge of newBadges) {
+          const { error: badgeError } = await supabase.from('user_badges').insert({
+            user_id: user.id,
+            badge_id: badge.id
+          });
+
+          if (!badgeError) {
+            toast({
+              title: "New Badge Unlocked! 🏅",
+              description: `You earned the "${badge.name}" badge!`,
+              className: "bg-primary text-primary-foreground border-primary"
+            });
+          }
+        }
       }
 
       // Refresh submissions list

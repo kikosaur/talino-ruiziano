@@ -88,7 +88,7 @@ const Footer = () => {
 
         <div className="pt-8 border-t border-white/20 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-white/60 text-sm">
-            © 2024 Talino-Ruiziano. All rights reserved.
+            © 2026 Talino-Ruiziano. All rights reserved.
           </p>
           <p className="text-white/60 text-sm flex items-center gap-1">
             Made with <Heart className="w-4 h-4 fill-yellow-400 text-yellow-400" /> for learners

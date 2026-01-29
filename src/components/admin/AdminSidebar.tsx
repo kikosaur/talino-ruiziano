@@ -92,17 +92,6 @@ const AdminSidebar = () => {
             </Link>
           );
         })}
-
-        {/* Back to Dashboard link */}
-        <Link
-          to="/dashboard"
-          className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:bg-background/10 text-background/80 mt-4 border-t border-background/10 pt-4"
-        >
-          <Home className="w-5 h-5 flex-shrink-0" />
-          {!collapsed && (
-            <span className="font-medium truncate">Student Dashboard</span>
-          )}
-        </Link>
       </nav>
 
       {/* Bottom section */}

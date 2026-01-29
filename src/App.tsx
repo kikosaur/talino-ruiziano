@@ -2,9 +2,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import { useEffect } from "react";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import StudentLayout from "@/layouts/StudentLayout";
+
+// Pages
 import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
@@ -12,6 +17,7 @@ import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import SubmitILT from "./pages/SubmitILT";
 import StudyCalendar from "./pages/StudyCalendar";
+import Todos from "./pages/Todos";
 import StudentSettings from "./pages/StudentSettings";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminSubmissions from "./pages/AdminSubmissions";
@@ -26,6 +32,19 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+// Analytics Tracker Component
+const PageTracker = () => {
+  const location = useLocation();
+  const { logEvent } = useAnalytics();
+
+  useEffect(() => {
+    // Log page view on route change
+    logEvent("view_page", { path: location.pathname });
+  }, [location.pathname, logEvent]);
+
+  return null;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -33,6 +52,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <PageTracker />
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
@@ -41,38 +61,21 @@ const App = () => (
             <Route path="/programs" element={<Programs />} />
             <Route path="/about" element={<About />} />
             <Route path="/bulletin" element={<Bulletin />} />
+            {/* Dashboard Routes with Layout */}
             <Route
               path="/dashboard"
               element={
                 <ProtectedRoute>
-                  <Dashboard />
+                  <StudentLayout />
                 </ProtectedRoute>
               }
-            />
-            <Route
-              path="/dashboard/submit"
-              element={
-                <ProtectedRoute>
-                  <SubmitILT />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/calendar"
-              element={
-                <ProtectedRoute>
-                  <StudyCalendar />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/settings"
-              element={
-                <ProtectedRoute>
-                  <StudentSettings />
-                </ProtectedRoute>
-              }
-            />
+            >
+              <Route index element={<Dashboard />} />
+              <Route path="submit" element={<SubmitILT />} />
+              <Route path="calendar" element={<StudyCalendar />} />
+              <Route path="todos" element={<Todos />} />
+              <Route path="settings" element={<StudentSettings />} />
+            </Route>
             <Route
               path="/admin"
               element={

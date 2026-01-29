@@ -1,11 +1,11 @@
 import { useState, useMemo } from "react";
-import { 
-  Search, 
-  Filter, 
-  Download, 
-  FileText, 
-  Image, 
-  ChevronUp, 
+import {
+  Search,
+  Filter,
+  Download,
+  FileText,
+  Image,
+  ChevronUp,
   ChevronDown,
   Eye,
   CheckCircle,
@@ -43,6 +43,7 @@ interface Submission {
   studentEmail: string;
   iltName: string;
   fileName: string;
+  fileUrl: string; // Added fileUrl
   fileType: string;
   fileSize: number;
   submittedAt: Date;
@@ -65,20 +66,20 @@ type SortField = "studentName" | "iltName" | "submittedAt" | "status";
 type SortDirection = "asc" | "desc";
 
 const statusConfig = {
-  pending: { 
-    label: "Pending", 
-    icon: Clock, 
-    className: "bg-accent/20 text-accent-foreground border-accent/30" 
+  pending: {
+    label: "Pending",
+    icon: Clock,
+    className: "bg-accent/20 text-accent-foreground border-accent/30"
   },
-  reviewed: { 
-    label: "Reviewed", 
-    icon: Eye, 
-    className: "bg-secondary/20 text-secondary border-secondary/30" 
+  reviewed: {
+    label: "Reviewed",
+    icon: Eye,
+    className: "bg-secondary/20 text-secondary border-secondary/30"
   },
-  graded: { 
-    label: "Graded", 
-    icon: CheckCircle, 
-    className: "bg-green-500/20 text-green-700 border-green-500/30" 
+  graded: {
+    label: "Graded",
+    icon: CheckCircle,
+    className: "bg-green-500/20 text-green-700 border-green-500/30"
   },
 };
 
@@ -109,7 +110,7 @@ const SubmissionsTable = ({ submissions, onExportCSV, onUpdateSubmission }: Subm
   const [iltFilter, setIltFilter] = useState<string>("all");
   const [sortField, setSortField] = useState<SortField>("submittedAt");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
-  
+
   // Grading modal state
   const [isGradingModalOpen, setIsGradingModalOpen] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
@@ -189,7 +190,7 @@ const SubmissionsTable = ({ submissions, onExportCSV, onUpdateSubmission }: Subm
 
   const handleSaveGrade = async () => {
     if (!selectedSubmission || !onUpdateSubmission) return;
-    
+
     setIsSaving(true);
     try {
       const result = await onUpdateSubmission(
@@ -197,7 +198,7 @@ const SubmissionsTable = ({ submissions, onExportCSV, onUpdateSubmission }: Subm
         editingStatus,
         editingGrade || undefined
       );
-      
+
       if (result.success) {
         toast({
           title: "Submission Updated! ✅",
@@ -380,9 +381,15 @@ const SubmissionsTable = ({ submissions, onExportCSV, onUpdateSubmission }: Subm
                           )}
                         </div>
                         <div>
-                          <p className="text-sm text-foreground truncate max-w-[150px]">
+                          <a
+                            href={submission.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-foreground hover:text-accent hover:underline truncate max-w-[150px] block font-medium flex items-center gap-1"
+                          >
                             {submission.fileName}
-                          </p>
+                            <Download className="w-3 h-3 text-muted-foreground" />
+                          </a>
                           <p className="text-xs text-muted-foreground">
                             {formatFileSize(submission.fileSize)}
                           </p>
@@ -474,49 +481,31 @@ const SubmissionsTable = ({ submissions, onExportCSV, onUpdateSubmission }: Subm
               {/* Status Selection */}
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
-                <Select value={editingStatus} onValueChange={(v) => setEditingStatus(v as typeof editingStatus)}>
-                  <SelectTrigger id="status" className="input-warm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-border">
-                    <SelectItem value="pending">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        Pending
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="reviewed">
-                      <div className="flex items-center gap-2">
-                        <Eye className="w-4 h-4" />
-                        Reviewed
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="graded">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4" />
-                        Graded
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <select
+                  id="status"
+                  value={editingStatus}
+                  onChange={(e) => setEditingStatus(e.target.value as typeof editingStatus)}
+                  className="w-full h-10 px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <option value="pending">Pending</option>
+                  <option value="reviewed">Reviewed</option>
+                  <option value="graded">Graded</option>
+                </select>
               </div>
 
               {/* Grade Selection */}
               <div className="space-y-2">
-                <Label htmlFor="grade">Grade (Optional)</Label>
-                <Select value={editingGrade} onValueChange={setEditingGrade}>
-                  <SelectTrigger id="grade" className="input-warm">
-                    <SelectValue placeholder="Select a grade" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-border">
-                    <SelectItem value="">No Grade</SelectItem>
-                    {gradeOptions.map((grade) => (
-                      <SelectItem key={grade} value={grade}>
-                        {grade}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="grade">Grade (0-100)</Label>
+                <Input
+                  id="grade"
+                  type="number"
+                  min="0"
+                  max="100"
+                  placeholder="Enter grade (e.g. 95)"
+                  value={editingGrade}
+                  onChange={(e) => setEditingGrade(e.target.value)}
+                  className="input-warm"
+                />
               </div>
             </div>
           )}

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { User, Lock, Save, Loader2, Camera, Shield } from "lucide-react";
-import DashboardSidebar from "@/components/dashboard/Sidebar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -109,7 +108,6 @@ const StudentSettings = () => {
 
     return (
         <div className="min-h-screen bg-background flex">
-            <DashboardSidebar />
 
             <main className="flex-1 ml-20 lg:ml-64 p-6 lg:p-8 transition-all duration-300">
                 <div className="max-w-4xl mx-auto space-y-8">
@@ -138,18 +136,61 @@ const StudentSettings = () => {
                             </CardHeader>
                             <form onSubmit={handleUpdateProfile}>
                                 <CardContent className="space-y-6">
-                                    {/* Avatar Placeholder */}
-                                    <div className="flex flex-col sm:flex-row items-center gap-6">
-                                        <div className="relative group">
-                                            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-primary text-3xl font-bold border-2 border-primary/20">
-                                                {(profile?.display_name?.[0] || user?.email?.[0] || "U").toUpperCase()}
+                                    {/* Avatar Selection */}
+                                    <div className="space-y-4">
+                                        <Label>Profile Picture</Label>
+                                        <div className="flex items-center gap-6">
+                                            {/* Current Avatar Preview */}
+                                            <div className="relative group shrink-0">
+                                                <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-2 border-primary/20">
+                                                    {profile?.avatar_url ? (
+                                                        <img
+                                                            src={profile.avatar_url}
+                                                            alt="Avatar"
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="text-primary text-3xl font-bold">
+                                                            {(profile?.display_name?.[0] || user?.email?.[0] || "U").toUpperCase()}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div className="space-y-1 text-center sm:text-left">
-                                            <h3 className="font-medium text-lg">Profile Picture</h3>
-                                            <p className="text-sm text-muted-foreground">
-                                                Your avatar is currently generated from your name.
-                                            </p>
+
+                                            {/* Avatar Options */}
+                                            <div className="flex-1">
+                                                <p className="text-sm text-muted-foreground mb-3">Choose an avatar:</p>
+                                                <div className="flex flex-wrap gap-3">
+                                                    {[
+                                                        "Felix", "Aneka", "Zoe", "Jack", "Bailey", "Midnight"
+                                                    ].map((seed) => {
+                                                        const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`;
+                                                        const isSelected = profile?.avatar_url === avatarUrl;
+
+                                                        return (
+                                                            <button
+                                                                key={seed}
+                                                                type="button"
+                                                                onClick={async () => {
+                                                                    if (!user) return;
+                                                                    const { error } = await supabase
+                                                                        .from("profiles")
+                                                                        .update({ avatar_url: avatarUrl })
+                                                                        .eq("user_id", user.id);
+
+                                                                    if (!error) {
+                                                                        await refreshProfile();
+                                                                        toast({ title: "Avatar Updated", description: "Looking good!" });
+                                                                    }
+                                                                }}
+                                                                className={`w-12 h-12 rounded-full overflow-hidden border-2 transition-all hover:scale-110 ${isSelected ? "border-accent ring-2 ring-accent/30" : "border-transparent hover:border-primary/30"}`}
+                                                            >
+                                                                <img src={avatarUrl} alt={seed} className="w-full h-full object-cover" />
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 

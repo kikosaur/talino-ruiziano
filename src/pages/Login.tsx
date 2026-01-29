@@ -57,6 +57,19 @@ const Login = () => {
 
       setIsLoading(false);
 
+      // Log login event explicitly
+      // Note: We can't use useAnalytics here easily if it depends on AuthContext which might not be fully updated yet?
+      // Actually, we can just insert directly for critical auth events where hook context might be racing.
+      try {
+        await supabase.from('usage_logs').insert({
+          user_id: session.user.id,
+          action: 'login',
+          details: { role: roleData?.role || 'student', method: 'email' }
+        });
+      } catch (err) {
+        console.error("Failed to log login:", err);
+      }
+
       // Navigate based on role
       if (roleData?.role === "teacher") {
         navigate("/admin");
