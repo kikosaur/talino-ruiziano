@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import SubmitILT from "./pages/SubmitILT";
+import StudyCalendar from "./pages/StudyCalendar";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminSubmissions from "./pages/AdminSubmissions";
 import NotFound from "./pages/NotFound";
@@ -40,6 +41,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <SubmitILT />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/calendar" 
+              element={
+                <ProtectedRoute>
+                  <StudyCalendar />
                 </ProtectedRoute>
               } 
             />
