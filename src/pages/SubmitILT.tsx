@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from "react";
+import { format } from "date-fns";
 import { Upload, FileText, Image, X, CheckCircle, AlertCircle } from "lucide-react";
 import DashboardSidebar from "@/components/dashboard/Sidebar";
 import ConfettiEffect from "@/components/dashboard/ConfettiEffect";
@@ -8,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubmissions } from "@/hooks/useSubmissions";
+import { useILTDeadlines } from "@/hooks/useILTDeadlines";
 
 interface UploadedFile {
   file: File;
@@ -22,18 +24,18 @@ const ALLOWED_TYPES = [
   "image/webp",
 ];
 
-const iltOptions = [
-  { id: "week1", name: "Week 1 - Introduction to Topic", dueDate: "Jan 20, 2024" },
-  { id: "week2", name: "Week 2 - Core Concepts", dueDate: "Jan 27, 2024" },
-  { id: "week3", name: "Week 3 - Applied Learning", dueDate: "Feb 3, 2024" },
-  { id: "week4", name: "Week 4 - Practice Exercises", dueDate: "Feb 10, 2024" },
-  { id: "week5", name: "Week 5 - Review & Reflection", dueDate: "Feb 17, 2024" },
-];
-
 const SubmitILT = () => {
   const { profile, refreshProfile } = useAuth();
   const { submitILT } = useSubmissions();
-  
+  const { deadlines } = useILTDeadlines();
+
+  // Convert deadlines to iltOptions format for the form
+  const iltOptions = deadlines.map((d) => ({
+    id: d.id,
+    name: d.name,
+    dueDate: format(new Date(d.deadline), "MMM d, yyyy"),
+  }));
+
   const [selectedILT, setSelectedILT] = useState("");
   const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -47,7 +49,7 @@ const SubmitILT = () => {
 
   const handleFileSelect = useCallback((file: File) => {
     setError("");
-    
+
     if (!ALLOWED_TYPES.includes(file.type)) {
       setError("Please upload a PDF or image file (JPEG, PNG, GIF, WebP)");
       return;
@@ -59,7 +61,7 @@ const SubmitILT = () => {
     }
 
     const uploadedFile: UploadedFile = { file };
-    
+
     // Create preview for images
     if (file.type.startsWith("image/")) {
       uploadedFile.preview = URL.createObjectURL(file);
@@ -81,7 +83,7 @@ const SubmitILT = () => {
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     const file = e.dataTransfer.files[0];
     if (file) {
       handleFileSelect(file);
@@ -211,7 +213,7 @@ const SubmitILT = () => {
               <Label className="text-foreground font-semibold text-lg">
                 Upload Your Work
               </Label>
-              
+
               {!uploadedFile ? (
                 <div
                   onDragOver={handleDragOver}
@@ -232,7 +234,7 @@ const SubmitILT = () => {
                     onChange={handleInputChange}
                     className="hidden"
                   />
-                  
+
                   <div className="space-y-4">
                     <div className="w-16 h-16 bg-accent/20 rounded-2xl flex items-center justify-center mx-auto">
                       <Upload className="w-8 h-8 text-accent" />
@@ -262,16 +264,16 @@ const SubmitILT = () => {
                     {/* Preview/Icon */}
                     <div className="w-16 h-16 rounded-xl overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center">
                       {uploadedFile.preview ? (
-                        <img 
-                          src={uploadedFile.preview} 
-                          alt="Preview" 
+                        <img
+                          src={uploadedFile.preview}
+                          alt="Preview"
                           className="w-full h-full object-cover"
                         />
                       ) : (
                         <FileText className="w-8 h-8 text-primary" />
                       )}
                     </div>
-                    
+
                     {/* File info */}
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-foreground truncate">
@@ -285,7 +287,7 @@ const SubmitILT = () => {
                         <span className="text-sm font-medium">Ready to submit</span>
                       </div>
                     </div>
-                    
+
                     {/* Remove button */}
                     <button
                       onClick={removeFile}

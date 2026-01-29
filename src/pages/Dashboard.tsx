@@ -1,14 +1,27 @@
+import { useState } from "react";
 import DashboardSidebar from "@/components/dashboard/Sidebar";
 import WelcomeCard from "@/components/dashboard/WelcomeCard";
 import BadgeGallery from "@/components/dashboard/BadgeGallery";
 import QuickActions from "@/components/dashboard/QuickActions";
 import RecentActivity from "@/components/dashboard/RecentActivity";
 import TodoList from "@/components/dashboard/TodoList";
+import MusicPlayer from "@/components/dashboard/MusicPlayer";
+import PeerChat from "@/components/dashboard/PeerChat";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 
 const Dashboard = () => {
   const { profile, isLoading } = useAuth();
+  const [isMusicPlayerVisible, setIsMusicPlayerVisible] = useState(false);
+  const [isChatVisible, setIsChatVisible] = useState(false);
+
+  const toggleMusicPlayer = () => {
+    setIsMusicPlayerVisible((prev) => !prev);
+  };
+
+  const toggleChat = () => {
+    setIsChatVisible((prev) => !prev);
+  };
 
   if (isLoading || !profile) {
     return (
@@ -23,8 +36,11 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardSidebar />
-      
+      <DashboardSidebar
+        onMusicToggle={toggleMusicPlayer}
+        onChatToggle={toggleChat}
+      />
+
       {/* Main content */}
       <main className="ml-20 lg:ml-64 p-6 lg:p-8 transition-all duration-300">
         <div className="max-w-7xl mx-auto space-y-6">
@@ -45,7 +61,7 @@ const Dashboard = () => {
 
             {/* Right Column - Quick Actions & Todo List */}
             <div className="space-y-6">
-              <QuickActions />
+              <QuickActions onMusicToggle={toggleMusicPlayer} />
               <TodoList />
             </div>
           </div>
@@ -54,8 +70,21 @@ const Dashboard = () => {
           <RecentActivity />
         </div>
       </main>
+
+      {/* Floating Music Player */}
+      <MusicPlayer
+        isVisible={isMusicPlayerVisible}
+        onToggle={toggleMusicPlayer}
+      />
+
+      {/* Floating Peer Chat */}
+      <PeerChat
+        isVisible={isChatVisible}
+        onToggle={toggleChat}
+      />
     </div>
   );
 };
 
 export default Dashboard;
+

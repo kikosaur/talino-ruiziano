@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { BookOpen, Mail, Lock, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -13,17 +14,23 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signIn, isAdmin } = useAuth();
+  const { signIn, user } = useAuth();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     const { error } = await signIn(email, password);
-    
-    setIsLoading(false);
 
     if (error) {
+      setIsLoading(false);
       toast({
         title: "Login failed",
         description: error.message,
@@ -32,13 +39,34 @@ const Login = () => {
       return;
     }
 
-    toast({
-      title: "Welcome back! 🎓",
-      description: "You've been successfully logged in.",
-    });
-    
-    // Navigate based on role (isAdmin will be updated after auth state change)
-    navigate("/dashboard");
+    // Get current session and check role
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (session?.user) {
+      // Check if user is admin
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+
+      toast({
+        title: "Welcome back! 🎓",
+        description: "You've been successfully logged in.",
+      });
+
+      setIsLoading(false);
+
+      // Navigate based on role
+      if (roleData?.role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/dashboard");
+      }
+    } else {
+      setIsLoading(false);
+      navigate("/dashboard");
+    }
   };
 
   return (
@@ -49,7 +77,7 @@ const Login = () => {
           <div className="absolute top-20 left-10 w-32 h-32 bg-accent/20 rounded-full blur-3xl animate-float" />
           <div className="absolute bottom-20 right-10 w-48 h-48 bg-primary-foreground/10 rounded-full blur-3xl animate-float" style={{ animationDelay: "1s" }} />
         </div>
-        
+
         <div className="relative z-10 text-center space-y-8">
           <div className="w-24 h-24 bg-accent rounded-3xl flex items-center justify-center mx-auto shadow-[var(--shadow-gold)] animate-float">
             <BookOpen className="w-12 h-12 text-accent-foreground" />
@@ -59,15 +87,15 @@ const Login = () => {
               Talino-Ruiziano
             </h1>
             <p className="text-primary-foreground/80 text-lg max-w-md mx-auto">
-              Your gamified learning journey awaits. Earn points, unlock badges, 
+              Your gamified learning journey awaits. Earn points, unlock badges,
               and excel in your studies!
             </p>
           </div>
-          
+
           {/* Floating badges */}
           <div className="flex justify-center gap-4 mt-8">
             {["🌟", "📚", "🔥", "🏆"].map((emoji, i) => (
-              <div 
+              <div
                 key={i}
                 className="w-14 h-14 bg-primary-foreground/10 rounded-xl flex items-center justify-center text-2xl animate-float"
                 style={{ animationDelay: `${i * 0.2}s` }}
@@ -151,8 +179,8 @@ const Login = () => {
                 </a>
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="btn-gold w-full text-lg flex items-center justify-center gap-2"
                 disabled={isLoading}
               >

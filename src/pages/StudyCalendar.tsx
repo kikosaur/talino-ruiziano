@@ -1,22 +1,11 @@
 import { useState, useMemo } from "react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, isBefore, addMonths, subMonths } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, isBefore, addMonths, subMonths } from "date-fns";
 import { ChevronLeft, ChevronRight, Calendar, FileText, Clock, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import DashboardSidebar from "@/components/dashboard/Sidebar";
 import { Button } from "@/components/ui/button";
 import { useSubmissions } from "@/hooks/useSubmissions";
+import { useILTDeadlines } from "@/hooks/useILTDeadlines";
 import { cn } from "@/lib/utils";
-
-// ILT deadline configuration (mock deadlines for demonstration)
-const iltDeadlines = [
-  { name: "ILT Week 1: Introduction to Research", deadline: new Date(2026, 0, 15) },
-  { name: "ILT Week 2: Literature Review", deadline: new Date(2026, 0, 22) },
-  { name: "ILT Week 3: Methodology", deadline: new Date(2026, 0, 29) },
-  { name: "ILT Week 4: Data Collection", deadline: new Date(2026, 1, 5) },
-  { name: "ILT Week 5: Data Analysis", deadline: new Date(2026, 1, 12) },
-  { name: "ILT Week 6: Results Discussion", deadline: new Date(2026, 1, 19) },
-  { name: "ILT Week 7: Conclusion", deadline: new Date(2026, 1, 26) },
-  { name: "ILT Week 8: Final Presentation", deadline: new Date(2026, 2, 5) },
-];
 
 type DeadlineStatus = "completed" | "upcoming" | "overdue";
 
@@ -56,29 +45,35 @@ const statusConfig = {
 
 const StudyCalendar = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const { submissions, isLoading } = useSubmissions();
+  const { submissions, isLoading: submissionsLoading } = useSubmissions();
+  const { deadlines: iltDeadlines, isLoading: deadlinesLoading } = useILTDeadlines();
+
+  const isLoading = submissionsLoading || deadlinesLoading;
 
   // Calculate deadlines with their status
   const deadlinesWithStatus: DeadlineWithStatus[] = useMemo(() => {
     const now = new Date();
-    
+
     return iltDeadlines.map((ilt) => {
+      const deadlineDate = new Date(ilt.deadline);
+
       // Check if this ILT was submitted
       const submission = submissions.find((s) => s.ilt_name === ilt.name);
-      
+
       if (submission) {
         return {
-          ...ilt,
+          name: ilt.name,
+          deadline: deadlineDate,
           status: "completed" as DeadlineStatus,
           submittedAt: new Date(submission.submitted_at),
         };
-      } else if (isBefore(ilt.deadline, now)) {
-        return { ...ilt, status: "overdue" as DeadlineStatus };
+      } else if (isBefore(deadlineDate, now)) {
+        return { name: ilt.name, deadline: deadlineDate, status: "overdue" as DeadlineStatus };
       } else {
-        return { ...ilt, status: "upcoming" as DeadlineStatus };
+        return { name: ilt.name, deadline: deadlineDate, status: "upcoming" as DeadlineStatus };
       }
     });
-  }, [submissions]);
+  }, [submissions, iltDeadlines]);
 
   // Get days in current month view
   const monthStart = startOfMonth(currentMonth);

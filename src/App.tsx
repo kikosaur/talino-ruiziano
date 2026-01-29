@@ -13,6 +13,10 @@ import SubmitILT from "./pages/SubmitILT";
 import StudyCalendar from "./pages/StudyCalendar";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminSubmissions from "./pages/AdminSubmissions";
+import AdminDeadlines from "./pages/AdminDeadlines";
+import Programs from "./pages/Programs";
+import About from "./pages/About";
+import Bulletin from "./pages/Bulletin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,45 +32,56 @@ const App = () => (
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route 
-              path="/dashboard" 
+            <Route path="/programs" element={<Programs />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/bulletin" element={<Bulletin />} />
+            <Route
+              path="/dashboard"
               element={
                 <ProtectedRoute>
                   <Dashboard />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/dashboard/submit" 
+            <Route
+              path="/dashboard/submit"
               element={
                 <ProtectedRoute>
                   <SubmitILT />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/dashboard/calendar" 
+            <Route
+              path="/dashboard/calendar"
               element={
                 <ProtectedRoute>
                   <StudyCalendar />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/admin" 
+            <Route
+              path="/admin"
               element={
                 <ProtectedRoute requireAdmin>
                   <AdminDashboard />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/admin/submissions" 
+            <Route
+              path="/admin/submissions"
               element={
                 <ProtectedRoute requireAdmin>
                   <AdminSubmissions />
                 </ProtectedRoute>
-              } 
+              }
+            />
+            <Route
+              path="/admin/deadlines"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <AdminDeadlines />
+                </ProtectedRoute>
+              }
             />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

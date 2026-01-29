@@ -1,14 +1,15 @@
-import { 
-  LayoutDashboard, 
-  Users, 
-  FileText, 
-  BarChart3, 
+import {
+  LayoutDashboard,
+  Users,
+  FileText,
+  BarChart3,
   Settings,
   LogOut,
   BookOpen,
   ChevronLeft,
   ChevronRight,
-  Home
+  Home,
+  Calendar
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -18,6 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 const menuItems = [
   { icon: LayoutDashboard, label: "Overview", path: "/admin" },
   { icon: FileText, label: "Submissions", path: "/admin/submissions" },
+  { icon: Calendar, label: "Deadlines", path: "/admin/deadlines" },
   { icon: Users, label: "Students", path: "/admin/students" },
   { icon: BarChart3, label: "Analytics", path: "/admin/analytics" },
   { icon: Settings, label: "Settings", path: "/admin/settings" },
@@ -35,7 +37,7 @@ const AdminSidebar = () => {
   };
 
   return (
-    <aside 
+    <aside
       className={cn(
         "fixed left-0 top-0 h-full bg-foreground text-background transition-all duration-300 z-50 flex flex-col",
         collapsed ? "w-20" : "w-64"
@@ -76,8 +78,8 @@ const AdminSidebar = () => {
               to={item.path}
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
-                isActive 
-                  ? "bg-accent text-accent-foreground shadow-[var(--shadow-gold)]" 
+                isActive
+                  ? "bg-accent text-accent-foreground shadow-[var(--shadow-gold)]"
                   : "hover:bg-background/10 text-background/80"
               )}
             >
@@ -116,7 +118,7 @@ const AdminSidebar = () => {
             </>
           )}
         </button>
-        
+
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-destructive/20 transition-all text-background/70 hover:text-background"
