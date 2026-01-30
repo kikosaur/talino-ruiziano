@@ -28,9 +28,11 @@ const menuItems = [
 interface DashboardSidebarProps {
   onMusicToggle?: () => void;
   onChatToggle?: () => void;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
-const DashboardSidebar = ({ onMusicToggle, onChatToggle }: DashboardSidebarProps) => {
+const DashboardSidebar = ({ onMusicToggle, onChatToggle, mobileOpen = false, onMobileClose }: DashboardSidebarProps) => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -45,7 +47,11 @@ const DashboardSidebar = ({ onMusicToggle, onChatToggle }: DashboardSidebarProps
     <aside
       className={cn(
         "fixed left-0 top-0 h-full bg-primary text-primary-foreground transition-all duration-300 z-50 flex flex-col",
-        collapsed ? "w-20" : "w-64"
+        // Desktop styles
+        collapsed ? "md:w-20" : "md:w-64",
+        // Mobile styles - hidden by default, visible when open
+        "w-64 transform md:translate-x-0 md:transform-none",
+        mobileOpen ? "translate-x-0" : "-translate-x-full"
       )}
     >
       {/* Logo */}

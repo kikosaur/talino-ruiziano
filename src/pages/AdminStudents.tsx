@@ -1,9 +1,28 @@
 import { useState, useEffect } from "react";
-import { Users, Search, Mail, Trophy, BookOpen, Loader2, MessageCircle, Download, Filter, X, TrendingUp, Award, Clock } from "lucide-react";
+import { Users, Search, Mail, Trophy, BookOpen, Loader2, MessageCircle, Download, Filter, X, TrendingUp, Award, Clock, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useOutletContext } from "react-router-dom";
+
+interface StudentSubmission {
+    id: string;
+    ilt_name: string;
+    file_name: string;
+    file_url: string;
+    status: string;
+    grade: string | null;
+    points_awarded: number;
+    submitted_at: string;
+}
+
+interface StudentBadge {
+    badge_id: string;
+    name: string;
+    icon: string;
+    description: string;
+    earned_at: string;
+}
 
 interface StudentProfile {
     user_id: string;
@@ -15,7 +34,12 @@ interface StudentProfile {
     streak_days: number;
     total_time_spent_seconds: number | null;
     session_count: number | null;
+    last_active_at: string | null;
+    submission_count?: number;
+    submissions?: StudentSubmission[];
+    badges?: StudentBadge[];
 }
+
 
 interface AdminLayoutContext {
     toggleChat: (recipientId?: string) => void;
@@ -29,6 +53,7 @@ const AdminStudents = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedStudent, setSelectedStudent] = useState<StudentProfile | null>(null);
     const [sortBy, setSortBy] = useState<"name" | "points" | "level" | "time">("name");
+    const [submissionFilter, setSubmissionFilter] = useState<'7' | '30' | 'all'>('all');
 
     useEffect(() => {
         const fetchStudents = async () => {
@@ -44,14 +69,75 @@ const AdminStudents = () => {
 
                 if (roleData && roleData.length > 0) {
                     const studentIds = roleData.map(r => r.user_id);
-                    const { data, error } = await supabase
+
+                    // Fetch profiles
+                    const { data: profilesData, error } = await supabase
                         .from("profiles")
                         .select("*")
                         .in("user_id", studentIds)
                         .order("display_name", { ascending: true });
 
                     if (error) throw error;
-                    setStudents(data as StudentProfile[]);
+
+                    // Fetch submissions with full details for all students
+                    const { data: submissionsData } = await supabase
+                        .from("submissions")
+                        .select("*")
+                        .in("user_id", studentIds)
+                        .order("submitted_at", { ascending: false });
+
+                    // Fetch badges for all students
+                    const { data: badgesData } = await supabase
+                        .from("user_badges")
+                        .select(`
+                            badge_id,
+                            earned_at,
+                            user_id,
+                            badges (
+                                id,
+                                name,
+                                icon,
+                                description
+                            )
+                        `)
+                        .in("user_id", studentIds);
+
+                    // Aggregate data
+                    const studentsWithData = profilesData?.map(profile => {
+                        // Get submissions for this student
+                        const userSubmissions = submissionsData?.filter(
+                            s => s.user_id === profile.user_id
+                        ).map(s => ({
+                            id: s.id,
+                            ilt_name: s.ilt_name,
+                            file_name: s.file_name,
+                            file_url: s.file_url,
+                            status: s.status,
+                            grade: s.grade,
+                            points_awarded: s.points_awarded,
+                            submitted_at: s.submitted_at
+                        })) || [];
+
+                        // Get badges
+                        const userBadges = badgesData?.filter(
+                            b => b.user_id === profile.user_id
+                        ).map(b => ({
+                            badge_id: b.badge_id,
+                            name: (b.badges as any)?.name || '',
+                            icon: (b.badges as any)?.icon || '',
+                            description: (b.badges as any)?.description || '',
+                            earned_at: b.earned_at
+                        })) || [];
+
+                        return {
+                            ...profile,
+                            submission_count: userSubmissions.length,
+                            submissions: userSubmissions,
+                            badges: userBadges
+                        } as StudentProfile;
+                    }) || [];
+
+                    setStudents(studentsWithData);
                 } else {
                     setStudents([]);
                 }
@@ -310,7 +396,7 @@ const AdminStudents = () => {
                                 </button>
                             </div>
 
-                            <div className="p-6 space-y-6">
+                            <div className="p-6 space-y-6 pb-8">
                                 <div className="flex items-start gap-6">
                                     <div className="w-24 h-24 rounded-2xl bg-primary/10 flex items-center justify-center overflow-hidden border-2 border-primary/20 shrink-0">
                                         {selectedStudent.avatar_url ? (
@@ -340,28 +426,193 @@ const AdminStudents = () => {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div className="card-elevated p-4 text-center">
-                                        <Trophy className="w-8 h-8 text-accent mx-auto mb-2" />
-                                        <p className="text-2xl font-bold text-accent">{selectedStudent.total_points}</p>
-                                        <p className="text-sm text-muted-foreground">Total Points</p>
+                                <div className="grid grid-cols-3 gap-3">
+                                    <div className="card-elevated p-3 text-center">
+                                        <Trophy className="w-6 h-6 text-accent mx-auto mb-1" />
+                                        <p className="text-xl font-bold text-accent">{selectedStudent.total_points}</p>
+                                        <p className="text-xs text-muted-foreground">Total Points</p>
                                     </div>
-                                    <div className="card-elevated p-4 text-center">
-                                        <BookOpen className="w-8 h-8 text-secondary mx-auto mb-2" />
-                                        <p className="text-2xl font-bold text-secondary">Level {selectedStudent.level}</p>
-                                        <p className="text-sm text-muted-foreground">Current Level</p>
+                                    <div className="card-elevated p-3 text-center">
+                                        <BookOpen className="w-6 h-6 text-secondary mx-auto mb-1" />
+                                        <p className="text-xl font-bold text-secondary">Level {selectedStudent.level}</p>
+                                        <p className="text-xs text-muted-foreground">Current Level</p>
                                     </div>
-                                    <div className="card-elevated p-4 text-center">
-                                        <Award className="w-8 h-8 text-orange-600 mx-auto mb-2" />
-                                        <p className="text-2xl font-bold text-orange-600">{selectedStudent.streak_days}</p>
-                                        <p className="text-sm text-muted-foreground">Day Streak 🔥</p>
+                                    <div className="card-elevated p-3 text-center">
+                                        <Award className="w-6 h-6 text-orange-600 mx-auto mb-1" />
+                                        <p className="text-xl font-bold text-orange-600">{selectedStudent.streak_days}</p>
+                                        <p className="text-xs text-muted-foreground">Day Streak 🔥</p>
                                     </div>
                                 </div>
 
-                                <div className="bg-accent/5 border border-accent/20 rounded-xl p-4">
-                                    <p className="text-sm text-muted-foreground">
-                                        <strong className="text-foreground">Note:</strong> Additional student data such as submissions, badges, and activity history will be available in future updates.
-                                    </p>
+                                {/* Usage Statistics */}
+                                <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-5">
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <Clock className="w-5 h-5 text-blue-600" />
+                                        <h4 className="font-semibold text-foreground">Usage Statistics</h4>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <p className="text-xs text-muted-foreground mb-1">Total Time</p>
+                                            <p className="text-lg font-bold text-blue-600">
+                                                {selectedStudent.total_time_spent_seconds !== null && selectedStudent.total_time_spent_seconds > 0
+                                                    ? `${Math.floor(selectedStudent.total_time_spent_seconds / 3600)}h ${Math.floor((selectedStudent.total_time_spent_seconds % 3600) / 60)}m`
+                                                    : '< 1m'}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-muted-foreground mb-1">Sessions</p>
+                                            <p className="text-lg font-bold text-blue-600">
+                                                {selectedStudent.session_count || 0}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-muted-foreground mb-1">Avg Session</p>
+                                            <p className="text-lg font-bold text-blue-600">
+                                                {selectedStudent.session_count && selectedStudent.total_time_spent_seconds
+                                                    ? `${Math.floor(selectedStudent.total_time_spent_seconds / selectedStudent.session_count / 60)}m`
+                                                    : '—'}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-muted-foreground mb-1">Last Active</p>
+                                            <p className="text-lg font-bold text-blue-600">
+                                                {selectedStudent.last_active_at
+                                                    ? new Date(selectedStudent.last_active_at).toLocaleDateString()
+                                                    : 'Never'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Recent Submissions */}
+                                <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-5">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="flex items-center gap-2">
+                                            <FileText className="w-5 h-5 text-green-600" />
+                                            <h4 className="font-semibold text-foreground">Recent Submissions</h4>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => setSubmissionFilter('7')}
+                                                className={`px-3 py-1 text-xs rounded-lg transition-colors ${submissionFilter === '7'
+                                                    ? 'bg-green-600 text-white'
+                                                    : 'bg-green-500/10 text-green-600 hover:bg-green-500/20'
+                                                    }`}
+                                            >
+                                                7 Days
+                                            </button>
+                                            <button
+                                                onClick={() => setSubmissionFilter('30')}
+                                                className={`px-3 py-1 text-xs rounded-lg transition-colors ${submissionFilter === '30'
+                                                    ? 'bg-green-600 text-white'
+                                                    : 'bg-green-500/10 text-green-600 hover:bg-green-500/20'
+                                                    }`}
+                                            >
+                                                30 Days
+                                            </button>
+                                            <button
+                                                onClick={() => setSubmissionFilter('all')}
+                                                className={`px-3 py-1 text-xs rounded-lg transition-colors ${submissionFilter === 'all'
+                                                    ? 'bg-green-600 text-white'
+                                                    : 'bg-green-500/10 text-green-600 hover:bg-green-500/20'
+                                                    }`}
+                                            >
+                                                All Time
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                                        {selectedStudent.submissions && selectedStudent.submissions.length > 0 ? (
+                                            (() => {
+                                                const now = new Date();
+                                                const filterDays = submissionFilter === '7' ? 7 : submissionFilter === '30' ? 30 : 999999;
+                                                const cutoffDate = new Date(now.getTime() - filterDays * 24 * 60 * 60 * 1000);
+
+                                                const filteredSubmissions = selectedStudent.submissions.filter(sub => {
+                                                    if (submissionFilter === 'all') return true;
+                                                    return new Date(sub.submitted_at) >= cutoffDate;
+                                                });
+
+                                                return filteredSubmissions.length > 0 ? (
+                                                    filteredSubmissions.map((submission) => (
+                                                        <div
+                                                            key={submission.id}
+                                                            className="flex items-center justify-between p-3 bg-card rounded-lg border border-border hover:border-green-500/50 transition-colors"
+                                                        >
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-center gap-2">
+                                                                    <p className="font-medium text-sm truncate">{submission.file_name}</p>
+                                                                    <span className={`px-2 py-0.5 text-xs rounded ${submission.status === 'graded'
+                                                                        ? 'bg-blue-500/20 text-blue-600'
+                                                                        : submission.status === 'submitted'
+                                                                            ? 'bg-green-500/20 text-green-600'
+                                                                            : 'bg-gray-500/20 text-gray-600'
+                                                                        }`}>
+                                                                        {submission.status}
+                                                                    </span>
+                                                                </div>
+                                                                <p className="text-xs text-muted-foreground mt-1">
+                                                                    {submission.ilt_name} • {new Date(submission.submitted_at).toLocaleDateString()}
+                                                                </p>
+                                                            </div>
+                                                            {submission.grade && (
+                                                                <div className="text-right ml-3">
+                                                                    <p className="text-sm font-bold text-green-600">{submission.grade}</p>
+                                                                    <p className="text-xs text-muted-foreground">{submission.points_awarded} pts</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div className="text-center py-6">
+                                                        <p className="text-sm text-muted-foreground">No submissions in this period</p>
+                                                    </div>
+                                                );
+                                            })()
+                                        ) : (
+                                            <div className="text-center py-6">
+                                                <div className="text-4xl mb-2">📝</div>
+                                                <p className="text-sm text-muted-foreground">No submissions yet</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Badges Earned */}
+                                <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-5">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="flex items-center gap-2">
+                                            <Award className="w-5 h-5 text-amber-600" />
+                                            <h4 className="font-semibold text-foreground">
+                                                Badges Earned {selectedStudent.badges && selectedStudent.badges.length > 0 && (
+                                                    <span className="text-sm text-muted-foreground">({selectedStudent.badges.length})</span>
+                                                )}
+                                            </h4>
+                                        </div>
+                                    </div>
+                                    {selectedStudent.badges && selectedStudent.badges.length > 0 ? (
+                                        <div className="grid grid-cols-4 gap-3">
+                                            {selectedStudent.badges.slice(0, 8).map((badge) => (
+                                                <div
+                                                    key={badge.badge_id}
+                                                    className="flex flex-col items-center gap-2 p-3 bg-card-elevated rounded-lg hover:bg-muted/50 transition-colors group"
+                                                    title={badge.description}
+                                                >
+                                                    <div className="text-3xl">{badge.icon}</div>
+                                                    <p className="text-xs text-center text-muted-foreground group-hover:text-foreground line-clamp-2">
+                                                        {badge.name}
+                                                    </p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-6">
+                                            <div className="text-4xl mb-2">🏆</div>
+                                            <p className="text-sm text-muted-foreground">No badges earned yet</p>
+                                            <p className="text-xs text-muted-foreground mt-1">Keep learning to earn badges!</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

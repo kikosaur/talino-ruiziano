@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import { 
-  Music, 
-  Play, 
-  Pause, 
-  SkipBack, 
-  SkipForward, 
-  Volume2, 
+import {
+  Music,
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  Volume2,
   VolumeX,
   ChevronDown,
   ChevronUp
@@ -114,7 +114,7 @@ const MusicPlayer = ({ isVisible, onToggle }: MusicPlayerProps) => {
   };
 
   const handlePrevious = () => {
-    setCurrentTrackIndex((prev) => 
+    setCurrentTrackIndex((prev) =>
       prev === 0 ? lofiTracks.length - 1 : prev - 1
     );
     setProgress(0);
@@ -124,7 +124,7 @@ const MusicPlayer = ({ isVisible, onToggle }: MusicPlayerProps) => {
   };
 
   const handleNext = () => {
-    setCurrentTrackIndex((prev) => 
+    setCurrentTrackIndex((prev) =>
       prev === lofiTracks.length - 1 ? 0 : prev + 1
     );
     setProgress(0);
@@ -151,8 +151,10 @@ const MusicPlayer = ({ isVisible, onToggle }: MusicPlayerProps) => {
   return (
     <div
       className={cn(
-        "fixed bottom-6 right-6 z-50 transition-all duration-300 ease-in-out",
-        isExpanded ? "w-80" : "w-14"
+        "fixed z-50 transition-all duration-300 ease-in-out",
+        isExpanded
+          ? "bottom-24 inset-x-4 w-auto sm:w-80 sm:inset-x-auto sm:bottom-6 sm:right-6"
+          : "bottom-6 right-6 w-14"
       )}
     >
       {/* Collapsed State - Just an icon button */}
@@ -215,7 +217,7 @@ const MusicPlayer = ({ isVisible, onToggle }: MusicPlayerProps) => {
 
             {/* Progress Bar */}
             <div className="h-1 bg-muted rounded-full overflow-hidden mb-4">
-              <div 
+              <div
                 className="h-full bg-gradient-to-r from-accent to-primary transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
@@ -285,8 +287,8 @@ const MusicPlayer = ({ isVisible, onToggle }: MusicPlayerProps) => {
               >
                 <div className={cn(
                   "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
-                  index === currentTrackIndex 
-                    ? "bg-accent text-primary-foreground" 
+                  index === currentTrackIndex
+                    ? "bg-accent text-primary-foreground"
                     : "bg-muted text-muted-foreground"
                 )}>
                   {index + 1}

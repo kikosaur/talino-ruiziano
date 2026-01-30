@@ -63,6 +63,9 @@ const AdminGuide = () => {
                         <li>• Total points and current level</li>
                         <li>• Active learning streak (🔥 days)</li>
                         <li>• Email address</li>
+                        <li>• <strong>Usage Statistics:</strong> Track total study time and session consistency</li>
+                        <li>• <strong>Submission History:</strong> View detailed work history with time filters</li>
+                        <li>• <strong>Badges & Achievements:</strong> See student milestones</li>
                     </ul>
                     <div className="mt-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
                         <p className="text-xs text-foreground"><strong>💡 Tip:</strong> Export student data to CSV for record-keeping!</p>

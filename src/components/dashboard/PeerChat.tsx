@@ -128,8 +128,10 @@ const PeerChat = ({ isVisible, onToggle, autoSelectRecipientId }: PeerChatProps)
     return (
         <div
             className={cn(
-                "fixed bottom-6 right-24 z-50 transition-all duration-300 ease-in-out",
-                isExpanded ? "w-80 sm:w-96" : "w-14"
+                "fixed z-50 transition-all duration-300 ease-in-out",
+                isExpanded
+                    ? "bottom-24 inset-x-4 w-auto sm:w-96 sm:inset-x-auto sm:bottom-6 sm:right-24"
+                    : "bottom-6 right-24 w-14"
             )}
         >
             {/* Collapsed State */}

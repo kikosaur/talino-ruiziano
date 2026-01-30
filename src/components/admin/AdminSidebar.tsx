@@ -29,9 +29,11 @@ const menuItems = [
 
 interface AdminSidebarProps {
   onChatToggle?: () => void;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
-const AdminSidebar = ({ onChatToggle }: AdminSidebarProps) => {
+const AdminSidebar = ({ onChatToggle, mobileOpen = false, onMobileClose }: AdminSidebarProps) => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -46,7 +48,11 @@ const AdminSidebar = ({ onChatToggle }: AdminSidebarProps) => {
     <aside
       className={cn(
         "fixed left-0 top-0 h-full bg-foreground text-background transition-all duration-300 z-50 flex flex-col",
-        collapsed ? "w-20" : "w-64"
+        // Desktop styles
+        collapsed ? "md:w-20" : "md:w-64",
+        // Mobile styles - hidden by default, visible when open
+        "w-64 transform md:translate-x-0 md:transform-none",
+        mobileOpen ? "translate-x-0" : "-translate-x-full"
       )}
     >
       {/* Logo */}

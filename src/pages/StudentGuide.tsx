@@ -208,6 +208,28 @@ const StudentGuide = () => {
             )
         },
         {
+            id: "activity",
+            title: "Activity Tracking",
+            icon: Clock,
+            color: "text-teal-500",
+            content: (
+                <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                        Your learning time is automatically tracked to help you build consistent study habits!
+                    </p>
+                    <h4 className="font-semibold text-sm">Usage Stats Card:</h4>
+                    <ul className="space-y-2 text-sm text-muted-foreground">
+                        <li><strong>⏱️ Total Time:</strong> Shows how long you've been actively learning on the platform.</li>
+                        <li><strong>👥 Sessions:</strong> Counts how many times you've logged in to study.</li>
+                        <li><strong>⌛ Avg Session:</strong> Your average study duration per session.</li>
+                    </ul>
+                    <div className="mt-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                        <p className="text-xs text-foreground"><strong>💡 Smart Tracking:</strong> The timer pauses automatically when you're inactive, so you get an accurate picture of your focus time!</p>
+                    </div>
+                </div>
+            )
+        },
+        {
             id: "progress",
             title: "Tracking Progress",
             icon: TrendingUp,
