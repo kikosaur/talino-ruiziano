@@ -136,48 +136,41 @@ const About = () => {
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8 max-w-4xl mx-auto">
-                        {/* Creator 1 - Kim Ciriaca */}
-                        <div className="card-elevated p-6 text-center hover:scale-[1.02] transition-transform">
-                            <div className="w-32 h-32 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full mx-auto mb-4 flex items-center justify-center overflow-hidden border-4 border-background shadow-lg">
-                                <div className="w-full h-full bg-muted/30 flex items-center justify-center">
-                                    <Users className="w-16 h-16 text-muted-foreground/40" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8 max-w-6xl mx-auto">
+                        {[
+                            { name: "Kim Ramos Ciriaca", image: "/creators/Ciriaca Kim, Ramos.jpg" },
+                            { name: "RJel Santiago Atraje", image: "/creators/Atraje, RJel Santiago.jpg" },
+                            { name: "Kim P. Del Rosario", image: "/creators/Del Rosario, Kim P.jpg" },
+                            { name: "Eddrian Santos Gaboy", image: "/creators/Gaboy, Eddrian Santos.jpg" },
+                            { name: "Keizel B. Quinones", image: "/creators/Quinones, Keizel B.jpg" },
+                            { name: "Robby Rian A. Yacat", image: "/creators/Yacat, Robby Rian A.jpg" },
+                            { name: "To Be Added", image: null },
+                        ].map((creator, index) => (
+                            <div key={index} className="card-elevated p-6 text-center hover:scale-[1.02] transition-transform flex flex-col items-center">
+                                <div className="w-32 h-32 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full mb-4 flex items-center justify-center overflow-hidden border-4 border-background shadow-lg shrink-0">
+                                    {creator.image ? (
+                                        <img
+                                            src={creator.image}
+                                            alt={creator.name}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                // Fallback if image fails to load
+                                                e.currentTarget.style.display = 'none';
+                                                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                            }}
+                                        />
+                                    ) : null}
+                                    <div className={`w-full h-full bg-muted/30 flex items-center justify-center ${creator.image ? 'hidden' : ''}`}>
+                                        <Users className="w-16 h-16 text-muted-foreground/40" />
+                                    </div>
                                 </div>
+                                <h3 className="font-serif font-bold text-lg text-foreground mb-1">
+                                    {creator.name}
+                                </h3>
+                                <p className="text-muted-foreground text-sm mb-2">Researcher</p>
+                                <div className="h-1 w-12 bg-gradient-to-r from-primary to-accent mx-auto rounded-full mt-auto"></div>
                             </div>
-                            <h3 className="font-serif font-bold text-xl text-foreground mb-1">
-                                Kim Ciriaca
-                            </h3>
-                            <p className="text-muted-foreground text-sm mb-2">Developer</p>
-                            <div className="h-1 w-16 bg-gradient-to-r from-primary to-accent mx-auto rounded-full"></div>
-                        </div>
-
-                        {/* Creator 2 - To Be Added */}
-                        <div className="card-elevated p-6 text-center hover:scale-[1.02] transition-transform">
-                            <div className="w-32 h-32 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full mx-auto mb-4 flex items-center justify-center overflow-hidden border-4 border-background shadow-lg">
-                                <div className="w-full h-full bg-muted/30 flex items-center justify-center">
-                                    <Users className="w-16 h-16 text-muted-foreground/40" />
-                                </div>
-                            </div>
-                            <h3 className="font-serif font-bold text-xl text-foreground mb-1">
-                                To Be Added
-                            </h3>
-                            <p className="text-muted-foreground text-sm mb-2">Team Member</p>
-                            <div className="h-1 w-16 bg-gradient-to-r from-primary to-accent mx-auto rounded-full"></div>
-                        </div>
-
-                        {/* Creator 3 - To Be Added */}
-                        <div className="card-elevated p-6 text-center hover:scale-[1.02] transition-transform">
-                            <div className="w-32 h-32 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full mx-auto mb-4 flex items-center justify-center overflow-hidden border-4 border-background shadow-lg">
-                                <div className="w-full h-full bg-muted/30 flex items-center justify-center">
-                                    <Users className="w-16 h-16 text-muted-foreground/40" />
-                                </div>
-                            </div>
-                            <h3 className="font-serif font-bold text-xl text-foreground mb-1">
-                                To Be Added
-                            </h3>
-                            <p className="text-muted-foreground text-sm mb-2">Team Member</p>
-                            <div className="h-1 w-16 bg-gradient-to-r from-primary to-accent mx-auto rounded-full"></div>
-                        </div>
+                        ))}
                     </div>
                 </div>
             </section>
