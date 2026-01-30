@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Users, Search, Mail, Trophy, BookOpen, Loader2, MessageCircle, Download, Filter, X, TrendingUp, Award } from "lucide-react";
+import { Users, Search, Mail, Trophy, BookOpen, Loader2, MessageCircle, Download, Filter, X, TrendingUp, Award, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -13,6 +13,8 @@ interface StudentProfile {
     total_points: number;
     level: number;
     streak_days: number;
+    total_time_spent_seconds: number | null;
+    session_count: number | null;
 }
 
 interface AdminLayoutContext {
@@ -26,7 +28,7 @@ const AdminStudents = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedStudent, setSelectedStudent] = useState<StudentProfile | null>(null);
-    const [sortBy, setSortBy] = useState<"name" | "points" | "level">("name");
+    const [sortBy, setSortBy] = useState<"name" | "points" | "level" | "time">("name");
 
     useEffect(() => {
         const fetchStudents = async () => {
@@ -79,6 +81,10 @@ const AdminStudents = () => {
                     return b.total_points - a.total_points;
                 case "level":
                     return b.level - a.level;
+                case "time":
+                    const aTime = a.total_time_spent_seconds || 0;
+                    const bTime = b.total_time_spent_seconds || 0;
+                    return bTime - aTime;
                 case "name":
                 default:
                     return (a.display_name || "").localeCompare(b.display_name || "");
@@ -196,6 +202,14 @@ const AdminStudents = () => {
                             <TrendingUp className="w-4 h-4" />
                             Level
                         </Button>
+                        <Button
+                            variant={sortBy === "time" ? "default" : "outline"}
+                            onClick={() => setSortBy("time")}
+                            className="gap-2"
+                        >
+                            <Clock className="w-4 h-4" />
+                            Usage
+                        </Button>
                     </div>
                 </div>
 
@@ -247,6 +261,14 @@ const AdminStudents = () => {
                                         {student.streak_days > 0 && (
                                             <div className="flex items-center gap-1 bg-orange-500/10 px-3 py-1.5 rounded-lg border border-orange-500/20">
                                                 <span className="text-sm font-bold text-orange-600">{student.streak_days}🔥</span>
+                                            </div>
+                                        )}
+                                        {student.total_time_spent_seconds !== null && student.total_time_spent_seconds > 0 && (
+                                            <div className="flex items-center gap-1 bg-blue-500/10 px-3 py-1.5 rounded-lg border border-blue-500/20">
+                                                <Clock className="w-4 h-4 text-blue-600" />
+                                                <span className="text-sm font-bold text-blue-600">
+                                                    {Math.floor(student.total_time_spent_seconds / 3600)}h {Math.floor((student.total_time_spent_seconds % 3600) / 60)}m
+                                                </span>
                                             </div>
                                         )}
                                     </div>

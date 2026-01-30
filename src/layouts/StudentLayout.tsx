@@ -3,8 +3,12 @@ import { Outlet } from "react-router-dom";
 import DashboardSidebar from "@/components/dashboard/Sidebar";
 import MusicPlayer from "@/components/dashboard/MusicPlayer";
 import PeerChat from "@/components/dashboard/PeerChat";
+import { useSessionTracker } from "@/hooks/useSessionTracker";
 
 const StudentLayout = () => {
+    // Track user session time
+    useSessionTracker();
+
     const [isMusicPlayerVisible, setIsMusicPlayerVisible] = useState(false);
     const [isChatVisible, setIsChatVisible] = useState(false);
 

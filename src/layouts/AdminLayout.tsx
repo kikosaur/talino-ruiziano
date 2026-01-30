@@ -2,8 +2,12 @@ import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import PeerChat from "@/components/dashboard/PeerChat";
+import { useSessionTracker } from "@/hooks/useSessionTracker";
 
 const AdminLayout = () => {
+    // Track user session time
+    useSessionTracker();
+
     const [isChatVisible, setIsChatVisible] = useState(false);
     const [autoSelectRecipientId, setAutoSelectRecipientId] = useState<string | null>(null);
 

@@ -44,6 +44,36 @@ export type Database = {
         }
         Relationships: []
       }
+      ilt_deadlines: {
+        Row: {
+          id: string
+          name: string
+          subject: string | null
+          description: string | null
+          deadline: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          subject?: string | null
+          description?: string | null
+          deadline: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          subject?: string | null
+          description?: string | null
+          deadline?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -75,6 +105,9 @@ export type Database = {
           level: number
           streak_days: number
           total_points: number
+          total_time_spent_seconds: number | null
+          last_active_at: string | null
+          session_count: number | null
           updated_at: string
           user_id: string
         }
@@ -87,6 +120,9 @@ export type Database = {
           level?: number
           streak_days?: number
           total_points?: number
+          total_time_spent_seconds?: number | null
+          last_active_at?: string | null
+          session_count?: number | null
           updated_at?: string
           user_id: string
         }
@@ -99,8 +135,41 @@ export type Database = {
           level?: number
           streak_days?: number
           total_points?: number
+          total_time_spent_seconds?: number | null
+          last_active_at?: string | null
+          session_count?: number | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      session_logs: {
+        Row: {
+          id: string
+          user_id: string
+          session_start: string
+          session_end: string | null
+          duration_seconds: number | null
+          page_views: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          session_start?: string
+          session_end?: string | null
+          duration_seconds?: number | null
+          page_views?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          session_start?: string
+          session_end?: string | null
+          duration_seconds?: number | null
+          page_views?: number | null
+          created_at?: string
         }
         Relationships: []
       }
