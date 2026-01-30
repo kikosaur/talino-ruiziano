@@ -256,7 +256,7 @@ const StudentGuide = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-background p-6">
+        <div className="min-h-screen bg-background p-6 ml-0 md:ml-20 lg:ml-64 transition-all duration-300">
             <div className="max-w-4xl mx-auto space-y-6">
                 {/* Header */}
                 <div className="space-y-2">

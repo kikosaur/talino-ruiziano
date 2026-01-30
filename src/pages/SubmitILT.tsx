@@ -163,7 +163,7 @@ const SubmitILT = () => {
         newTotal={currentPoints + 50}
       />
 
-      <main className="ml-20 lg:ml-64 p-6 lg:p-8 transition-all duration-300">
+      <main className="ml-0 md:ml-20 lg:ml-64 p-6 lg:p-8 transition-all duration-300">
         <div className="max-w-3xl mx-auto space-y-8">
           {/* Header */}
           <div className="space-y-2">

@@ -42,7 +42,7 @@ const Dashboard = () => {
   return (
     <div className="bg-background">
       {/* Main content */}
-      <main className="ml-20 lg:ml-64 p-6 lg:p-8 transition-all duration-300">
+      <main className="ml-0 md:ml-20 lg:ml-64 p-6 lg:p-8 transition-all duration-300">
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Welcome Section */}
           <WelcomeCard

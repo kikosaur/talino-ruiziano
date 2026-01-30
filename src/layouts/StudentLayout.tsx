@@ -52,7 +52,7 @@ const StudentLayout = () => {
                 />
             )}
 
-            <div className="flex-1 w-full md:pl-20 lg:pl-0 transition-all duration-300">
+            <div className="flex-1 w-full transition-all duration-300">
                 <Outlet context={{ toggleMusicPlayer, toggleChat }} />
             </div>
 

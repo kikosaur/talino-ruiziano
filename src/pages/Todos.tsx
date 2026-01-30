@@ -5,7 +5,7 @@ const Todos = () => {
     return (
         <div className="min-h-screen bg-background">
 
-            <main className="ml-20 lg:ml-64 p-6 lg:p-8 transition-all duration-300">
+            <main className="ml-0 md:ml-20 lg:ml-64 p-6 lg:p-8 transition-all duration-300">
                 <div className="max-w-4xl mx-auto space-y-8">
                     {/* Header */}
                     <div className="space-y-2">
