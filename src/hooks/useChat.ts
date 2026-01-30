@@ -12,6 +12,7 @@ export interface ChatMessage {
     sender_name?: string;
     sender_avatar?: string | null;
     sender_role?: string;
+    recipient_id: string | null; // Added to standard interface
 }
 
 export const useChat = () => {
@@ -23,6 +24,7 @@ export const useChat = () => {
     const [onlineUsers, setOnlineUsers] = useState<{ user_id: string, name: string, role: string }[]>([]);
     const [allUsers, setAllUsers] = useState<{ user_id: string, name: string, role: string, avatar_url?: string | null }[]>([]);
     const [activeRecipientId, setActiveRecipientId] = useState<string | null>(null);
+    const [lastIncomingMessage, setLastIncomingMessage] = useState<ChatMessage | null>(null);
 
     // Fetch existing messages with sender info
     const fetchMessages = useCallback(async () => {
@@ -69,10 +71,11 @@ export const useChat = () => {
                 const enrichedMessages = messagesData.map((m) => {
                     const profile = profileMap.get(m.user_id) as any;
                     return {
-                        ...m,
+                        ...(m as any),
                         sender_name: profile?.display_name || "Unknown",
                         sender_avatar: profile?.avatar_url,
                         sender_role: (roleMap.get(m.user_id) as any) || "student",
+                        recipient_id: (m as any).recipient_id
                     };
                 });
 
@@ -192,6 +195,28 @@ export const useChat = () => {
                         // 2. If we are in Private Chat (currentRecipientId is set):
                         //    - Show if message is between ME and RECIPIENT
 
+                        // Notification Logic: Check if message is for me or global, regardless of active view
+                        if (
+                            newMessage.user_id !== user.id && // Not from me
+                            (newMessage.recipient_id === user.id || newMessage.recipient_id === null) // To me or Global
+                        ) {
+                            // Fetch sender info for notification if needed, or just use partial
+                            // For simplicity/speed we might just pass raw new message or wait for profile
+                            // But we need the name for the toast ("John sent a message")
+
+                            // We can fetch profile here essentially reusing logic
+                            const { data: notifProfile } = await supabase
+                                .from("profiles")
+                                .select("display_name")
+                                .eq("user_id", newMessage.user_id)
+                                .maybeSingle();
+
+                            setLastIncomingMessage({
+                                ...(newMessage as ChatMessage),
+                                sender_name: notifProfile?.display_name || "Someone"
+                            });
+                        }
+
                         let isRelevant = false;
 
                         if (currentRecipientId) {
@@ -208,9 +233,8 @@ export const useChat = () => {
 
                         if (!isRelevant) return;
 
-                        // Fetch sender info for the new message
+                        // Fetch sender info for the new message in current view
                         // We fetch these individually to ensure we have the latest profile info
-                        // Optimization: Could check if we already have this user in allUsers
                         const { data: profileData } = await supabase
                             .from("profiles")
                             .select("display_name, avatar_url")
@@ -296,5 +320,6 @@ export const useChat = () => {
         allUsers,
         activeRecipientId,
         setActiveRecipientId,
+        lastIncomingMessage
     };
 };

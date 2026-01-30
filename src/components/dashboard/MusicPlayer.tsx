@@ -15,7 +15,11 @@ import {
   Trash2,
   Loader2,
   Search,
-  ChevronDown
+  ChevronDown,
+  Shuffle,
+  Repeat,
+  Repeat1,
+  Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -42,12 +46,16 @@ const MusicPlayer = ({ isVisible, onToggle }: MusicPlayerProps) => {
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
 
+  // Playback Modes
+  const [loopMode, setLoopMode] = useState<'all' | 'one' | 'none'>('all'); // Default loop playlist
+  const [isShuffle, setIsShuffle] = useState(false);
+
   // Library State
   const [showLibrary, setShowLibrary] = useState(false);
   const [libraryTracks, setLibraryTracks] = useState<Track[]>([]);
   const [isLoadingLibrary, setIsLoadingLibrary] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isAdding, setIsAdding] = useState(false); // For import button loading checking per track if needed (not used globally yet)
+  const [isAdding, setIsAdding] = useState(false);
 
   // Form State (for custom adds - removed from UI but keeping state to avoid errors if logic persists)
   const [newTitle, setNewTitle] = useState("");
@@ -80,10 +88,15 @@ const MusicPlayer = ({ isVisible, onToggle }: MusicPlayerProps) => {
   useEffect(() => {
     if (!currentTrack) return;
 
+    // Pause functionality of previous track if any
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+
     // Create audio element
     audioRef.current = new Audio(currentTrack.url);
-    audioRef.current.volume = volume;
-    audioRef.current.loop = false;
+    audioRef.current.volume = isMuted ? 0 : volume;
+    audioRef.current.loop = false; // We handle loop manually
 
     const audio = audioRef.current;
 
@@ -96,18 +109,90 @@ const MusicPlayer = ({ isVisible, onToggle }: MusicPlayerProps) => {
 
     // Handle track end
     const handleEnded = () => {
-      handleNext();
+      if (loopMode === 'one') {
+        audio.currentTime = 0;
+        audio.play();
+      } else {
+        handleNext();
+      }
     };
 
     audio.addEventListener("timeupdate", updateProgress);
     audio.addEventListener("ended", handleEnded);
+
+    // Auto-play if state is Playing
+    if (isPlaying) {
+      audio.play().catch(console.error);
+    }
 
     return () => {
       audio.pause();
       audio.removeEventListener("timeupdate", updateProgress);
       audio.removeEventListener("ended", handleEnded);
     };
-  }, [currentTrack]); // Dependent on track object changing (id/url)
+  }, [currentTrack]); // We don't depend on isPlaying or loopMode here to avoid re-creation, handling logic inside
+
+  // Watch playback control changes (Note: loopMode handled in event listener closure? 
+  // careful: handleEnded defined inside accesses closure loopMode. 
+  // If loopMode changes, handleEnded is stale? YES. 
+  // We need handleEnded to reference current State.
+  // Actually, Effect runs on currentTrack change. If I change Loop Mode mid-song, it won't update the listener?
+  // Correct. We need to attach listener cleanly or use Ref for loopMode.
+
+  // Use Refs for latest state in listeners
+  const loopModeRef = useRef(loopMode);
+  const isShuffleRef = useRef(isShuffle);
+
+  useEffect(() => { loopModeRef.current = loopMode; }, [loopMode]);
+  useEffect(() => { isShuffleRef.current = isShuffle; }, [isShuffle]);
+
+  // Re-bind listener? Or just put loopMode in dependency?
+  // Putting loopMode in dependency re-creates Audio. That's bad (stops music).
+  // Better: Use the Ref inside the listener.
+
+  // Let's rewrite the EFFECT to use refs for logic.
+
+  useEffect(() => {
+    if (!currentTrack) return;
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+
+    audioRef.current = new Audio(currentTrack.url);
+    audioRef.current.volume = isMuted ? 0 : volume;
+
+    const audio = audioRef.current;
+
+    const updateProgress = () => {
+      if (audio.duration) {
+        setProgress((audio.currentTime / audio.duration) * 100);
+      }
+    };
+
+    const handleEnded = () => {
+      const currentLoop = loopModeRef.current;
+      if (currentLoop === 'one') {
+        audio.currentTime = 0;
+        audio.play();
+      } else {
+        handleNextManual(true); // Pass flag its auto
+      }
+    };
+
+    audio.addEventListener("timeupdate", updateProgress);
+    audio.addEventListener("ended", handleEnded);
+
+    if (isPlaying) {
+      audio.play().catch(console.error);
+    }
+
+    return () => {
+      audio.pause();
+      audio.removeEventListener("timeupdate", updateProgress);
+      audio.removeEventListener("ended", handleEnded);
+    };
+  }, [currentTrack]); // Only re-create on track change.
 
   useEffect(() => {
     if (audioRef.current) {
@@ -129,6 +214,14 @@ const MusicPlayer = ({ isVisible, onToggle }: MusicPlayerProps) => {
     setIsPlaying(!isPlaying);
   };
 
+  // Helper for shuffle logic
+  const getNextIndex = () => {
+    if (isShuffleRef.current) {
+      return Math.floor(Math.random() * tracks.length);
+    }
+    return currentTrackIndex === tracks.length - 1 ? 0 : currentTrackIndex + 1;
+  };
+
   const handlePrevious = () => {
     setCurrentTrackIndex((prev) =>
       prev === 0 ? tracks.length - 1 : prev - 1
@@ -136,12 +229,29 @@ const MusicPlayer = ({ isVisible, onToggle }: MusicPlayerProps) => {
     setProgress(0);
   };
 
-  const handleNext = () => {
-    setCurrentTrackIndex((prev) =>
-      prev === tracks.length - 1 ? 0 : prev + 1
-    );
+  const handleNextManual = (isAuto = false) => {
+    // If auto-next and loop is none and at end, stop.
+    if (isAuto && loopModeRef.current === 'none' && currentTrackIndex === tracks.length - 1 && !isShuffleRef.current) {
+      setIsPlaying(false);
+      return;
+    }
+
+    setCurrentTrackIndex((prev) => {
+      if (isShuffleRef.current) {
+        let nextInd = Math.floor(Math.random() * tracks.length);
+        // Avoid same song if possible
+        if (tracks.length > 1 && nextInd === prev) {
+          nextInd = (nextInd + 1) % tracks.length;
+        }
+        return nextInd;
+      }
+      return prev === tracks.length - 1 ? 0 : prev + 1;
+    });
     setProgress(0);
   };
+
+  // Exposed handleNext for button
+  const handleNext = () => handleNextManual(false);
 
   const toggleMute = () => {
     setIsMuted(!isMuted);
@@ -153,6 +263,16 @@ const MusicPlayer = ({ isVisible, onToggle }: MusicPlayerProps) => {
       setIsMuted(false);
     }
   };
+
+  const toggleLoop = () => {
+    setLoopMode(prev => {
+      if (prev === 'all') return 'one';
+      if (prev === 'one') return 'none';
+      return 'all'; // Default back to all
+    });
+  };
+
+  const toggleShuffle = () => setIsShuffle(!isShuffle);
 
   const handleAddTrack = async () => {
     if (!newTitle || !newArtist || !newUrl) {
@@ -278,35 +398,65 @@ const MusicPlayer = ({ isVisible, onToggle }: MusicPlayerProps) => {
             </div>
 
             {/* Controls */}
-            <div className="flex items-center justify-center gap-4 mb-4">
-              <button
-                onClick={handlePrevious}
-                className="p-2 hover:bg-muted rounded-xl transition-colors disabled:opacity-50"
-                title="Previous"
-                disabled={!currentTrack}
-              >
-                <SkipBack className="w-5 h-5 text-foreground" />
-              </button>
-              <button
-                onClick={togglePlay}
-                className="w-12 h-12 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center hover:scale-105 transition-transform shadow-lg disabled:opacity-50 disabled:hover:scale-100"
-                title={isPlaying ? "Pause" : "Play"}
-                disabled={!currentTrack}
-              >
-                {isPlaying ? (
-                  <Pause className="w-5 h-5 text-primary-foreground" />
-                ) : (
-                  <Play className="w-5 h-5 text-primary-foreground ml-0.5" />
-                )}
-              </button>
-              <button
-                onClick={handleNext}
-                className="p-2 hover:bg-muted rounded-xl transition-colors disabled:opacity-50"
-                title="Next"
-                disabled={!currentTrack}
-              >
-                <SkipForward className="w-5 h-5 text-foreground" />
-              </button>
+            <div className="flex flex-col gap-3 mb-4">
+              <div className="flex items-center justify-center gap-4">
+                <button
+                  onClick={toggleShuffle}
+                  className={cn(
+                    "p-2 rounded-xl transition-all duration-300 hover:bg-muted",
+                    isShuffle ? "text-accent bg-accent/10" : "text-muted-foreground"
+                  )}
+                  title="Shuffle"
+                >
+                  <Shuffle className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={handlePrevious}
+                  className="p-2 hover:bg-muted rounded-xl transition-colors disabled:opacity-50"
+                  title="Previous"
+                  disabled={!currentTrack}
+                >
+                  <SkipBack className="w-5 h-5 text-foreground" />
+                </button>
+
+                <button
+                  onClick={togglePlay}
+                  className="w-12 h-12 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center hover:scale-105 transition-transform shadow-lg disabled:opacity-50 disabled:hover:scale-100"
+                  title={isPlaying ? "Pause" : "Play"}
+                  disabled={!currentTrack}
+                >
+                  {isPlaying ? (
+                    <Pause className="w-5 h-5 text-primary-foreground" />
+                  ) : (
+                    <Play className="w-5 h-5 text-primary-foreground ml-0.5" />
+                  )}
+                </button>
+
+                <button
+                  onClick={handleNext}
+                  className="p-2 hover:bg-muted rounded-xl transition-colors disabled:opacity-50"
+                  title="Next"
+                  disabled={!currentTrack}
+                >
+                  <SkipForward className="w-5 h-5 text-foreground" />
+                </button>
+
+                <button
+                  onClick={toggleLoop}
+                  className={cn(
+                    "p-2 rounded-xl transition-all duration-300 hover:bg-muted",
+                    loopMode !== 'none' ? "text-accent bg-accent/10" : "text-muted-foreground"
+                  )}
+                  title={loopMode === 'one' ? "Loop One" : loopMode === 'all' ? "Loop All" : "No Loop"}
+                >
+                  {loopMode === 'one' ? (
+                    <Repeat1 className="w-4 h-4" />
+                  ) : (
+                    <Repeat className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* Volume Control */}
@@ -475,11 +625,21 @@ const MusicPlayer = ({ isVisible, onToggle }: MusicPlayerProps) => {
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="h-8 w-8 rounded-full hover:bg-accent hover:text-accent-foreground transition-all duration-300 ml-2"
-                      onClick={() => handleImportTrack(track)}
-                      title="Add to Playlist"
+                      className={cn(
+                        "h-8 w-8 rounded-full transition-all duration-300 ml-2",
+                        isAdded
+                          ? "bg-accent/20 text-accent hover:bg-accent/20 cursor-default"
+                          : "hover:bg-accent hover:text-accent-foreground"
+                      )}
+                      onClick={() => !isAdded && handleImportTrack(track)}
+                      title={isAdded ? "Already in Playlist" : "Add to Playlist"}
+                      disabled={isAdded}
                     >
-                      <Plus className="w-4 h-4" />
+                      {isAdded ? (
+                        <Check className="w-4 h-4" />
+                      ) : (
+                        <Plus className="w-4 h-4" />
+                      )}
                     </Button>
                   </div>
                 )
