@@ -1,51 +1,28 @@
 import { useState, useRef, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import {
-  Music,
   Play,
   Pause,
   SkipBack,
   SkipForward,
   Volume2,
   VolumeX,
-  ChevronDown,
-  ChevronUp
+  Maximize2,
+  Minimize2,
+  Music,
+  Plus,
+  X,
+  Trash2,
+  Loader2,
+  Search,
+  ChevronDown
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { cn } from "@/lib/utils";
 
-// Lo-Fi tracks using free royalty-free audio
-const lofiTracks = [
-  {
-    id: 1,
-    title: "Chill Vibes",
-    artist: "Study Beats",
-    url: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3"
-  },
-  {
-    id: 2,
-    title: "Focus Mode",
-    artist: "Lo-Fi Dreams",
-    url: "https://cdn.pixabay.com/download/audio/2022/10/25/audio_946bc6eb42.mp3"
-  },
-  {
-    id: 3,
-    title: "Late Night Study",
-    artist: "Ambient Waves",
-    url: "https://cdn.pixabay.com/download/audio/2022/02/22/audio_d1718ab41b.mp3"
-  },
-  {
-    id: 4,
-    title: "Coffee Shop",
-    artist: "Mellow Beats",
-    url: "https://cdn.pixabay.com/download/audio/2021/11/25/audio_cb5efc4a09.mp3"
-  },
-  {
-    id: 5,
-    title: "Rainy Day",
-    artist: "Calm Collective",
-    url: "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0c6ff1bab.mp3"
-  }
-];
+import { Input } from "@/components/ui/input";
+import { useMusic, Track } from "@/hooks/useMusic";
+import { toast } from "sonner";
 
 interface MusicPlayerProps {
   isVisible: boolean;
@@ -53,17 +30,56 @@ interface MusicPlayerProps {
 }
 
 const MusicPlayer = ({ isVisible, onToggle }: MusicPlayerProps) => {
+  const { tracks, isLoading: isPlaylistLoading, addTrack, removeTrack, fetchLibraryTracks } = useMusic();
+
+  // Player State
   const [isPlaying, setIsPlaying] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
-  const [volume, setVolume] = useState(0.5);
+  const [volume, setVolume] = useState(0.7);
   const [isMuted, setIsMuted] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+
+  // Library State
+  const [showLibrary, setShowLibrary] = useState(false);
+  const [libraryTracks, setLibraryTracks] = useState<Track[]>([]);
+  const [isLoadingLibrary, setIsLoadingLibrary] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isAdding, setIsAdding] = useState(false); // For import button loading checking per track if needed (not used globally yet)
+
+  // Form State (for custom adds - removed from UI but keeping state to avoid errors if logic persists)
+  const [newTitle, setNewTitle] = useState("");
+  const [newArtist, setNewArtist] = useState("");
+  const [newUrl, setNewUrl] = useState("");
+
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const currentTrack = lofiTracks[currentTrackIndex];
+  const currentTrack = tracks[currentTrackIndex] || tracks[0];
 
   useEffect(() => {
+    if (showLibrary) {
+      loadLibrary();
+    }
+  }, [showLibrary]);
+
+  const loadLibrary = async () => {
+    setIsLoadingLibrary(true);
+    const tracks = await fetchLibraryTracks();
+    setLibraryTracks(tracks);
+    setIsLoadingLibrary(false);
+  };
+
+  const filteredLibraryTracks = libraryTracks.filter(track =>
+    track.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    track.artist.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  useEffect(() => {
+    if (!currentTrack) return;
+
     // Create audio element
     audioRef.current = new Audio(currentTrack.url);
     audioRef.current.volume = volume;
@@ -91,7 +107,7 @@ const MusicPlayer = ({ isVisible, onToggle }: MusicPlayerProps) => {
       audio.removeEventListener("timeupdate", updateProgress);
       audio.removeEventListener("ended", handleEnded);
     };
-  }, [currentTrackIndex]);
+  }, [currentTrack]); // Dependent on track object changing (id/url)
 
   useEffect(() => {
     if (audioRef.current) {
@@ -107,7 +123,7 @@ const MusicPlayer = ({ isVisible, onToggle }: MusicPlayerProps) => {
         audioRef.current.pause();
       }
     }
-  }, [isPlaying, currentTrackIndex]);
+  }, [isPlaying]);
 
   const togglePlay = () => {
     setIsPlaying(!isPlaying);
@@ -115,22 +131,16 @@ const MusicPlayer = ({ isVisible, onToggle }: MusicPlayerProps) => {
 
   const handlePrevious = () => {
     setCurrentTrackIndex((prev) =>
-      prev === 0 ? lofiTracks.length - 1 : prev - 1
+      prev === 0 ? tracks.length - 1 : prev - 1
     );
     setProgress(0);
-    if (isPlaying) {
-      setTimeout(() => audioRef.current?.play(), 100);
-    }
   };
 
   const handleNext = () => {
     setCurrentTrackIndex((prev) =>
-      prev === lofiTracks.length - 1 ? 0 : prev + 1
+      prev === tracks.length - 1 ? 0 : prev + 1
     );
     setProgress(0);
-    if (isPlaying) {
-      setTimeout(() => audioRef.current?.play(), 100);
-    }
   };
 
   const toggleMute = () => {
@@ -144,9 +154,45 @@ const MusicPlayer = ({ isVisible, onToggle }: MusicPlayerProps) => {
     }
   };
 
+  const handleAddTrack = async () => {
+    if (!newTitle || !newArtist || !newUrl) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    setIsAdding(true);
+    const success = await addTrack(newTitle, newArtist, newUrl);
+
+    if (success) {
+      setNewTitle("");
+      setNewArtist("");
+      setNewUrl("");
+      // Form closed
+    }
+    setIsAdding(false);
+  };
+
+  const handleOpenLibrary = async () => {
+    setIsAdding(true);
+    const libs = await fetchLibraryTracks();
+    setLibraryTracks(libs);
+    setShowLibrary(true);
+    setIsAdding(false);
+  };
+
+  const handleImportTrack = async (track: Track) => {
+    if (confirm(`Add "${track.title}" to your playlist?`)) {
+      await addTrack(track.title, track.artist, track.url);
+      setShowLibrary(false);
+    }
+  };
+
   if (!isVisible) {
     return null;
   }
+
+  // Fallback if no tracks loaded yet - REMOVED to allow Library access
+  // if (!currentTrack && !showLibrary) return null;
 
   return (
     <div
@@ -168,8 +214,8 @@ const MusicPlayer = ({ isVisible, onToggle }: MusicPlayerProps) => {
       )}
 
       {/* Expanded Player */}
-      {isExpanded && (
-        <div className="bg-card/90 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl overflow-hidden">
+      {isExpanded && !showLibrary && (
+        <div className="bg-card/90 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[500px]">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-accent/20 to-primary/20 border-b border-border/50">
             <div className="flex items-center gap-2">
@@ -179,6 +225,14 @@ const MusicPlayer = ({ isVisible, onToggle }: MusicPlayerProps) => {
               <span className="font-semibold text-foreground">Music Corner</span>
             </div>
             <div className="flex items-center gap-1">
+              {/* Use a Library Button here */}
+              <button
+                onClick={handleOpenLibrary}
+                className="p-1.5 hover:bg-muted rounded-lg transition-colors text-xs flex items-center gap-1 mr-1 text-accent"
+                title="Browse Library"
+              >
+                <span className="font-bold">Library</span>
+              </button>
               <button
                 onClick={() => setIsExpanded(false)}
                 className="p-1.5 hover:bg-muted rounded-lg transition-colors"
@@ -205,12 +259,12 @@ const MusicPlayer = ({ isVisible, onToggle }: MusicPlayerProps) => {
                   isPlaying && "animate-bounce"
                 )} />
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="font-semibold text-foreground truncate">
-                  {currentTrack.title}
+                  {currentTrack ? currentTrack.title : "No music added"}
                 </p>
                 <p className="text-sm text-muted-foreground truncate">
-                  {currentTrack.artist}
+                  {currentTrack ? currentTrack.artist : "Add songs from Library"}
                 </p>
               </div>
             </div>
@@ -227,13 +281,17 @@ const MusicPlayer = ({ isVisible, onToggle }: MusicPlayerProps) => {
             <div className="flex items-center justify-center gap-4 mb-4">
               <button
                 onClick={handlePrevious}
-                className="p-2 hover:bg-muted rounded-xl transition-colors"
+                className="p-2 hover:bg-muted rounded-xl transition-colors disabled:opacity-50"
+                title="Previous"
+                disabled={!currentTrack}
               >
                 <SkipBack className="w-5 h-5 text-foreground" />
               </button>
               <button
                 onClick={togglePlay}
-                className="w-12 h-12 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center hover:scale-105 transition-transform shadow-lg"
+                className="w-12 h-12 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center hover:scale-105 transition-transform shadow-lg disabled:opacity-50 disabled:hover:scale-100"
+                title={isPlaying ? "Pause" : "Play"}
+                disabled={!currentTrack}
               >
                 {isPlaying ? (
                   <Pause className="w-5 h-5 text-primary-foreground" />
@@ -243,7 +301,9 @@ const MusicPlayer = ({ isVisible, onToggle }: MusicPlayerProps) => {
               </button>
               <button
                 onClick={handleNext}
-                className="p-2 hover:bg-muted rounded-xl transition-colors"
+                className="p-2 hover:bg-muted rounded-xl transition-colors disabled:opacity-50"
+                title="Next"
+                disabled={!currentTrack}
               >
                 <SkipForward className="w-5 h-5 text-foreground" />
               </button>
@@ -271,41 +331,160 @@ const MusicPlayer = ({ isVisible, onToggle }: MusicPlayerProps) => {
             </div>
           </div>
 
+          {/* Track List Header */}
+          <div className="px-4 py-2 border-t border-border/50 flex justify-between items-center bg-muted/20">
+            <span className="text-xs font-semibold text-muted-foreground">My Playlist</span>
+            <span className="text-[10px] text-muted-foreground/70">
+              {tracks.length} songs
+            </span>
+          </div>
+
           {/* Track List */}
-          <div className="border-t border-border/50 max-h-32 overflow-y-auto">
-            {lofiTracks.map((track, index) => (
-              <button
+          <div className="border-t border-border/50 overflow-y-auto flex-1 h-32">
+            {tracks.map((track, index) => (
+              <div
                 key={track.id}
-                onClick={() => {
-                  setCurrentTrackIndex(index);
-                  setIsPlaying(true);
-                }}
                 className={cn(
-                  "w-full px-4 py-2 flex items-center gap-3 hover:bg-muted/50 transition-colors text-left",
+                  "w-full px-4 py-2 flex items-center justify-between group hover:bg-muted/50 transition-colors",
                   index === currentTrackIndex && "bg-accent/10"
                 )}
               >
-                <div className={cn(
-                  "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
-                  index === currentTrackIndex
-                    ? "bg-accent text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
-                )}>
-                  {index + 1}
-                </div>
-                <div className="min-w-0">
-                  <p className={cn(
-                    "text-sm truncate",
-                    index === currentTrackIndex ? "text-accent font-medium" : "text-foreground"
+                <button
+                  onClick={() => {
+                    setCurrentTrackIndex(index);
+                    setIsPlaying(true);
+                  }}
+                  className="flex items-center gap-3 flex-1 text-left min-w-0"
+                >
+                  <div className={cn(
+                    "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0",
+                    index === currentTrackIndex
+                      ? "bg-accent text-primary-foreground"
+                      : "bg-muted text-muted-foreground/70"
                   )}>
-                    {track.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {track.artist}
-                  </p>
-                </div>
-              </button>
+                    {isPlaying && index === currentTrackIndex ? (
+                      <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                    ) : (
+                      index + 1
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className={cn(
+                      "text-sm truncate",
+                      index === currentTrackIndex ? "text-accent font-medium" : "text-foreground"
+                    )}>
+                      {track.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {track.artist}
+                    </p>
+                  </div>
+                </button>
+
+                {/* Delete Button (Only for user tracks) */}
+                {track.is_user_added && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm("Remove this song from your playlist?")) {
+                        removeTrack(track.id.toString());
+                      }
+                    }}
+                    className="p-1.5 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Remove Song"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* --- LIBRARY MODAL/VIEW --- */}
+      {isExpanded && showLibrary && (
+        <div className="bg-card/90 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[400px]">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-accent/20 to-primary/20 border-b border-border/50">
+            <div className="flex items-center gap-2">
+              <Music className="w-4 h-4 text-accent" />
+              <span className="font-semibold text-foreground">School Library</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => setShowLibrary(false)}
+            >
+              Back to Player
+            </Button>
+          </div>
+
+          {/* Library List */}
+          {/* Description */}
+          <div className="px-4 py-2">
+            <p className="text-xs text-muted-foreground">
+              Browse and add songs curated by your teachers.
+            </p>
+          </div>
+
+          <div className="relative px-4 pb-2">
+            <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search songs..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 bg-background/50 border-accent/20 focus-visible:ring-accent"
+            />
+          </div>
+
+          <div className="space-y-2 flex-1 overflow-y-auto px-4 pb-4 scrollbar-thin scrollbar-thumb-accent/20 scrollbar-track-transparent">
+            {isLoadingLibrary ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-accent" />
+              </div>
+            ) : filteredLibraryTracks.length === 0 ? (
+              <p className="text-center text-muted-foreground py-4 text-sm">No songs found.</p>
+            ) : (
+              filteredLibraryTracks.map((track) => {
+                const isAdded = tracks.some(t => t.title === track.title && t.artist === track.artist);
+                // Actually library tracks have ID, playlist tracks have ID. 
+                // But playlist ID != Library ID because it's a copy.
+                // So checking by Title+Artist is safer, OR checking if we store library_id.
+                // For now assuming existing logic checks content match or simply allows duplicates?
+                // Let's use the 'Check if added' logic used before or simplest UI.
+
+                // Simplest: Just use the button.
+                return (
+                  <div
+                    key={track.id}
+                    className="flex items-center justify-between p-3 rounded-xl border border-accent/10 bg-background/50 hover:bg-accent/5 hover:border-accent/20 transition-all duration-300 group shadow-sm"
+                  >
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center text-accent group-hover:scale-110 transition-transform duration-300">
+                        <Music className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm truncate text-foreground/90 group-hover:text-accent transition-colors">{track.title}</p>
+                        <p className="text-xs text-muted-foreground truncate font-medium">
+                          {track.artist}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 rounded-full hover:bg-accent hover:text-accent-foreground transition-all duration-300 ml-2"
+                      onClick={() => handleImportTrack(track)}
+                      title="Add to Playlist"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )
+              })
+            )}
           </div>
         </div>
       )}

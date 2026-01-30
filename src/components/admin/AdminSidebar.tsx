@@ -10,7 +10,8 @@ import {
   Home,
   Calendar,
   MessageCircle,
-  HelpCircle
+  HelpCircle,
+  Music
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -22,6 +23,7 @@ const menuItems = [
   { icon: FileText, label: "Submissions", path: "/admin/submissions" },
   { icon: Calendar, label: "Deadlines", path: "/admin/deadlines" },
   { icon: Users, label: "Students", path: "/admin/students" },
+  { icon: Music, label: "Music Library", path: "/admin/music" },
   { icon: BarChart3, label: "Analytics", path: "/admin/analytics" },
   { icon: HelpCircle, label: "How to Use", path: "/admin/guide" },
   { icon: Settings, label: "Settings", path: "/admin/settings" },

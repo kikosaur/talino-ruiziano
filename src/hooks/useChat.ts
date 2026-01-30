@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { RealtimeChannel } from "@supabase/supabase-js";
@@ -150,22 +150,30 @@ export const useChat = () => {
         }
     };
 
+    // Ref for active recipient to use in realtime callback without re-running effect
+    const activeRecipientIdRef = useRef<string | null>(null);
+
+    // Update ref when state changes
+    useEffect(() => {
+        activeRecipientIdRef.current = activeRecipientId;
+    }, [activeRecipientId]);
+
     // Fetch all users on mount
     useEffect(() => {
         fetchAllUsers();
     }, [fetchAllUsers]);
 
-    // Set up real-time subscription
+    // Set up real-time subscription (Global Channel)
     useEffect(() => {
+        if (!user) return;
+
         let channel: RealtimeChannel | null = null;
 
         const setupRealtime = async () => {
-            // First fetch existing messages
-            await fetchMessages();
-
-            // Then subscribe to new messages
+            // Subscribe to global chat channel for presence and messages
+            // We use a single channel so presence is shared across the app
             channel = supabase
-                .channel(`chat:${activeRecipientId || "public"}`)
+                .channel("global_study_chat")
                 .on(
                     "postgres_changes",
                     {
@@ -175,18 +183,34 @@ export const useChat = () => {
                     },
                     async (payload) => {
                         const newMessage = payload.new as any;
+                        const currentRecipientId = activeRecipientIdRef.current;
 
-                        // Filter messages client-side for the current view
-                        const isRelevant = activeRecipientId
-                            ? (
-                                (newMessage.user_id === user?.id && newMessage.recipient_id === activeRecipientId) ||
-                                (newMessage.user_id === activeRecipientId && newMessage.recipient_id === user?.id)
-                            )
-                            : (newMessage.recipient_id === null);
+                        // Filter messages client-side implementation
+                        // Logic:
+                        // 1. If we are in Public Chat (currentRecipientId is null):
+                        //    - Show if message is Public (recipient_id is null)
+                        // 2. If we are in Private Chat (currentRecipientId is set):
+                        //    - Show if message is between ME and RECIPIENT
+
+                        let isRelevant = false;
+
+                        if (currentRecipientId) {
+                            // Private Chat Mode
+                            isRelevant = (
+                                (newMessage.user_id === user.id && newMessage.recipient_id === currentRecipientId) ||
+                                (newMessage.user_id === currentRecipientId && newMessage.recipient_id === user.id)
+                            );
+                        } else {
+                            // Public Chat Mode
+                            // Only show public messages (recipient_id is null)
+                            isRelevant = (newMessage.recipient_id === null);
+                        }
 
                         if (!isRelevant) return;
 
                         // Fetch sender info for the new message
+                        // We fetch these individually to ensure we have the latest profile info
+                        // Optimization: Could check if we already have this user in allUsers
                         const { data: profileData } = await supabase
                             .from("profiles")
                             .select("display_name, avatar_url")
@@ -222,37 +246,41 @@ export const useChat = () => {
                     }
                 });
 
-            channel
-                .on("presence", { event: "sync" }, () => {
-                    const newState = channel?.presenceState();
-                    const users = [];
-                    for (const key in newState) {
-                        const stateUsers = newState[key];
-                        // Each key might have multiple entries (tabs)
-                        stateUsers.forEach((u: any) => {
-                            if (!users.find(existing => existing.user_id === u.user_id)) {
-                                users.push({
-                                    user_id: u.user_id,
-                                    name: u.name,
-                                    role: u.role
-                                });
-                            }
-                        });
-                    }
-                    setOnlineUsers(users);
-                });
+            // Handle Presence Sync (Who is online?)
+            channel.on("presence", { event: "sync" }, () => {
+                const newState = channel?.presenceState();
+                const users: { user_id: string, name: string, role: string }[] = [];
+
+                for (const key in newState) {
+                    const stateUsers = newState[key];
+                    (stateUsers as any[]).forEach((u: any) => {
+                        // Prevent duplicates and don't list self if desired, but usually we list everyone
+                        if (!users.find(existing => existing.user_id === u.user_id)) {
+                            users.push({
+                                user_id: u.user_id,
+                                name: u.name,
+                                role: u.role
+                            });
+                        }
+                    });
+                }
+                setOnlineUsers(users);
+            });
         };
 
-        if (user) {
-            setupRealtime();
-        }
+        setupRealtime();
 
         return () => {
             if (channel) {
                 supabase.removeChannel(channel);
             }
         };
-    }, [user, fetchMessages]);
+    }, [user, profile, isTeacher]); // Removed activeRecipientId dependency to keep channel stable
+
+    // Re-fetch messages when activeRecipientId changes (handled separately from subscription)
+    useEffect(() => {
+        fetchMessages();
+    }, [fetchMessages]); // fetchMessages depends on activeRecipientId
 
     return {
         messages,

@@ -12,7 +12,8 @@ import {
     Search,
     Filter,
     Send,
-    TrendingUp
+    TrendingUp,
+    Music
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -128,6 +129,32 @@ const AdminGuide = () => {
                     </ul>
                     <div className="mt-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
                         <p className="text-xs text-foreground"><strong>📅 Tip:</strong> Create deadlines in advance to give students time to plan!</p>
+                    </div>
+                </div>
+            )
+        },
+        {
+            id: "music-library",
+            title: "Music Library Management",
+            icon: Music, // Ensure Music is imported
+            color: "text-rose-500",
+            content: (
+                <div className="space-y-3">
+                    <h4 className="font-semibold text-sm">Curating Study Music:</h4>
+                    <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+                        <li>Go to the <strong>Music Library</strong> tab in the sidebar</li>
+                        <li>Click <strong>"Add New Song"</strong> button</li>
+                        <li>Enter the <strong>Song Title</strong>, <strong>Artist</strong>, and <strong>MP3 Link</strong></li>
+                        <li>Click <strong>"Add Song"</strong> to publish it to the school library</li>
+                    </ol>
+                    <h4 className="font-semibold text-sm mt-4">Managing Tracks:</h4>
+                    <ul className="space-y-1 text-sm text-muted-foreground">
+                        <li>• <strong>Search:</strong> Find songs to manage using the search bar</li>
+                        <li>• <strong>Preview:</strong> Play songs to verify the audio</li>
+                        <li>• <strong>Delete:</strong> Remove songs that are no longer needed</li>
+                    </ul>
+                    <div className="mt-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                        <p className="text-xs text-foreground"><strong>🎵 Note:</strong> Songs added here are instantly available to all students in their Music Player library!</p>
                     </div>
                 </div>
             )

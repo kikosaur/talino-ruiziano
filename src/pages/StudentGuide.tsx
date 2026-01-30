@@ -169,17 +169,17 @@ const StudentGuide = () => {
             content: (
                 <div className="space-y-3">
                     <p className="text-sm text-muted-foreground">
-                        Stay focused with background music while working on your ILTs.
+                        Stay focused with background music while working on your ILTs. Access the school library to build your perfect study playlist!
                     </p>
                     <h4 className="font-semibold text-sm">Features:</h4>
                     <ul className="space-y-1 text-sm text-muted-foreground">
-                        <li>🎵 Lo-fi beats for studying</li>
-                        <li>🎧 Floating player that stays with you</li>
-                        <li>🔊 Volume control</li>
-                        <li>⏸️ Play/Pause anytime</li>
+                        <li>🎵 <strong>School Library:</strong> Browse and search songs curated by teachers</li>
+                        <li>➕ <strong>Custom Playlist:</strong> Add your favorite tracks from the library</li>
+                        <li>🔍 <strong>Search:</strong> Easily find songs by title or artist</li>
+                        <li>🎧 <strong>Floating Player:</strong> Controls stay with you as you navigate</li>
                     </ul>
                     <div className="mt-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
-                        <p className="text-xs text-foreground"><strong>🎼 Tip:</strong> Click the music icon in the sidebar to toggle the player!</p>
+                        <p className="text-xs text-foreground"><strong>🎼 Tip:</strong> Open the "Library" in the music player to discover new songs!</p>
                     </div>
                 </div>
             )

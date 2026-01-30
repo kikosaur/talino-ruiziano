@@ -33,6 +33,8 @@ import About from "./pages/About";
 import Bulletin from "./pages/Bulletin";
 import NotFound from "./pages/NotFound";
 
+import MusicManager from "@/components/admin/MusicManager";
+
 const queryClient = new QueryClient();
 
 // Analytics Tracker Component
@@ -80,6 +82,10 @@ const App = () => (
               <Route path="settings" element={<StudentSettings />} />
               <Route path="guide" element={<StudentGuide />} />
             </Route>
+
+
+            // ... existing imports ...
+
             {/* Admin Routes with Layout */}
             <Route
               path="/admin"
@@ -96,6 +102,7 @@ const App = () => (
               <Route path="analytics" element={<AdminAnalytics />} />
               <Route path="settings" element={<AdminSettings />} />
               <Route path="guide" element={<AdminGuide />} />
+              <Route path="music" element={<MusicManager />} />
             </Route>
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
