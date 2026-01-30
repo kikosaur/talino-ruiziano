@@ -132,7 +132,7 @@ const About = () => {
                             Meet the Creators
                         </h2>
                         <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto">
-                            The team behind StudySpark
+                            The team behind Talino-Ruiziano
                         </p>
                     </div>
 
