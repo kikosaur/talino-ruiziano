@@ -1,10 +1,9 @@
-import { useState } from "react";
-import { Settings, Save, AlertCircle, Calendar, GraduationCap } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Settings, Save, AlertCircle, Calendar, GraduationCap, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/hooks/use-toast";
 import {
     Card,
     CardContent,
@@ -19,26 +18,54 @@ import {
     TabsList,
     TabsTrigger,
 } from "@/components/ui/tabs";
+import { useAppSettings } from "@/hooks/useAppSettings";
 
 const AdminSettings = () => {
-    const { toast } = useToast();
-    const [academicYear, setAcademicYear] = useState("2025-2026");
-    const [semester, setSemester] = useState("First Semester");
-    const [allowLateSubmissions, setAllowLateSubmissions] = useState(true);
-    const [maintenanceMode, setMaintenanceMode] = useState(false);
+    const { settings, isLoading, updateSettings } = useAppSettings();
     const [isSaving, setIsSaving] = useState(false);
+
+    // Local state for form inputs, initialized from settings
+    const [formData, setFormData] = useState({
+        class_name: "",
+        instructor_name: "",
+        course_description: "",
+        academic_year: "",
+        semester: "",
+        allow_late_submissions: true,
+        maintenance_mode: false
+    });
+
+    // Sync local state when settings load
+    useEffect(() => {
+        if (settings) {
+            setFormData({
+                class_name: settings.class_name,
+                instructor_name: settings.instructor_name,
+                course_description: settings.course_description,
+                academic_year: settings.academic_year,
+                semester: settings.semester,
+                allow_late_submissions: settings.allow_late_submissions,
+                maintenance_mode: settings.maintenance_mode
+            });
+        }
+    }, [settings]);
 
     const handleSave = async () => {
         setIsSaving(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        toast({
-            title: "Settings Saved",
-            description: "Application configuration has been updated.",
-        });
+        await updateSettings(formData);
         setIsSaving(false);
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="w-12 h-12 text-accent animate-spin" />
+                    <p className="text-muted-foreground">Loading settings...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <main className="p-6 lg:p-8 transition-all duration-300">
@@ -70,15 +97,30 @@ const AdminSettings = () => {
                             <CardContent className="space-y-4">
                                 <div className="grid gap-2">
                                     <Label htmlFor="class-name">Class Name</Label>
-                                    <Input id="class-name" defaultValue="BSIT Capstone Project" className="input-warm" />
+                                    <Input
+                                        id="class-name"
+                                        value={formData.class_name}
+                                        onChange={(e) => setFormData({ ...formData, class_name: e.target.value })}
+                                        className="input-warm"
+                                    />
                                 </div>
                                 <div className="grid gap-2">
                                     <Label htmlFor="instructor">Instructor Name</Label>
-                                    <Input id="instructor" defaultValue="Prof. Dela Cruz" className="input-warm" />
+                                    <Input
+                                        id="instructor"
+                                        value={formData.instructor_name}
+                                        onChange={(e) => setFormData({ ...formData, instructor_name: e.target.value })}
+                                        className="input-warm"
+                                    />
                                 </div>
                                 <div className="grid gap-2">
                                     <Label htmlFor="description">Description</Label>
-                                    <Input id="description" defaultValue="Capstone project management and submission system." className="input-warm" />
+                                    <Input
+                                        id="description"
+                                        value={formData.course_description}
+                                        onChange={(e) => setFormData({ ...formData, course_description: e.target.value })}
+                                        className="input-warm"
+                                    />
                                 </div>
                             </CardContent>
                             <CardFooter>
@@ -103,8 +145,8 @@ const AdminSettings = () => {
                                             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                             <Input
                                                 id="year"
-                                                value={academicYear}
-                                                onChange={(e) => setAcademicYear(e.target.value)}
+                                                value={formData.academic_year}
+                                                onChange={(e) => setFormData({ ...formData, academic_year: e.target.value })}
                                                 className="pl-9 input-warm"
                                             />
                                         </div>
@@ -115,8 +157,8 @@ const AdminSettings = () => {
                                             <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                             <Input
                                                 id="semester"
-                                                value={semester}
-                                                onChange={(e) => setSemester(e.target.value)}
+                                                value={formData.semester}
+                                                onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
                                                 className="pl-9 input-warm"
                                             />
                                         </div>
@@ -129,8 +171,8 @@ const AdminSettings = () => {
                                         <p className="text-sm text-muted-foreground">Students can upload files after the deadline (marked as late).</p>
                                     </div>
                                     <Switch
-                                        checked={allowLateSubmissions}
-                                        onCheckedChange={setAllowLateSubmissions}
+                                        checked={formData.allow_late_submissions}
+                                        onCheckedChange={(c) => setFormData({ ...formData, allow_late_submissions: c })}
                                         className="data-[state=checked]:bg-accent"
                                     />
                                 </div>
@@ -159,8 +201,8 @@ const AdminSettings = () => {
                                         <p className="text-sm text-destructive/80">Disable access for students temporarily.</p>
                                     </div>
                                     <Switch
-                                        checked={maintenanceMode}
-                                        onCheckedChange={setMaintenanceMode}
+                                        checked={formData.maintenance_mode}
+                                        onCheckedChange={(c) => setFormData({ ...formData, maintenance_mode: c })}
                                         className="data-[state=checked]:bg-destructive"
                                     />
                                 </div>

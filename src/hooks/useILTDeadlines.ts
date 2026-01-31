@@ -8,6 +8,7 @@ export interface ILTDeadline {
     subject: string;
     description: string;
     deadline: string; // ISO date string
+    is_archived: boolean;
     createdAt: string;
     updatedAt: string;
 }
@@ -33,6 +34,7 @@ export const useILTDeadlines = () => {
                     subject: d.subject || "General",
                     description: d.description || "",
                     deadline: d.deadline,
+                    is_archived: d.is_archived || false,
                     createdAt: d.created_at,
                     updatedAt: d.updated_at
                 }));
@@ -53,14 +55,12 @@ export const useILTDeadlines = () => {
                                             name: local.name,
                                             subject: local.subject || "General",
                                             description: local.description || "",
-                                            deadline: local.deadline
+                                            deadline: local.deadline,
+                                            is_archived: false
                                         });
                                     }
                                 }
                                 localStorage.removeItem("ilt_deadlines_v2");
-                                // We don't call fetchDeadlines recursively here to avoid loops, 
-                                // but the state will be updated on the next manual/auto refresh.
-                                // Actually, one refresh is fine.
                             } else {
                                 localStorage.removeItem("ilt_deadlines_v2");
                             }
@@ -92,6 +92,7 @@ export const useILTDeadlines = () => {
                         subject,
                         description,
                         deadline: deadline.toISOString(),
+                        is_archived: false
                     })
                     .select()
                     .single();
@@ -104,6 +105,7 @@ export const useILTDeadlines = () => {
                     subject: data.subject,
                     description: data.description,
                     deadline: data.deadline,
+                    is_archived: data.is_archived || false,
                     createdAt: data.created_at,
                     updatedAt: data.updated_at
                 };
@@ -131,6 +133,7 @@ export const useILTDeadlines = () => {
                         subject: updates.subject,
                         description: updates.description,
                         deadline: updates.deadline,
+                        is_archived: updates.is_archived,
                         updated_at: new Date().toISOString()
                     })
                     .eq("id", id);
@@ -141,6 +144,30 @@ export const useILTDeadlines = () => {
                 return true;
             } catch (error) {
                 console.error("Error updating deadline:", error);
+                return false;
+            }
+        },
+        [isTeacher, fetchDeadlines]
+    );
+
+    const archiveDeadline = useCallback(
+        async (id: string, isArchived: boolean): Promise<boolean> => {
+            if (!isTeacher) return false;
+
+            try {
+                const { error } = await (supabase.from("ilt_deadlines") as any)
+                    .update({
+                        is_archived: isArchived,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq("id", id);
+
+                if (error) throw error;
+
+                await fetchDeadlines(); // Refresh to update list
+                return true;
+            } catch (error) {
+                console.error("Error archiving deadline:", error);
                 return false;
             }
         },
@@ -183,9 +210,9 @@ export const useILTDeadlines = () => {
             if (deleteError) throw deleteError;
 
             const defaults = [
-                { name: 'Math Week 1', subject: 'Mathematics', description: 'Basic algebraic expressions', deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() },
-                { name: 'English Essay', subject: 'English', description: 'Write a 500-word essay on a classic novel', deadline: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString() },
-                { name: 'Science Lab', subject: 'Science', description: 'Chemical reaction report', deadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() }
+                { name: 'Math Week 1', subject: 'Mathematics', description: 'Basic algebraic expressions', deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), is_archived: false },
+                { name: 'English Essay', subject: 'English', description: 'Write a 500-word essay on a classic novel', deadline: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(), is_archived: false },
+                { name: 'Science Lab', subject: 'Science', description: 'Chemical reaction report', deadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), is_archived: false }
             ];
 
             await (supabase.from("ilt_deadlines") as any).insert(defaults);
@@ -201,6 +228,7 @@ export const useILTDeadlines = () => {
         addDeadline,
         updateDeadline,
         deleteDeadline,
+        archiveDeadline,
         getDeadline,
         resetToDefaults,
         refreshDeadlines: fetchDeadlines,

@@ -1,6 +1,10 @@
 import { useState, useRef, useCallback } from "react";
 import { format } from "date-fns";
-import { Upload, FileText, Image, X, CheckCircle, AlertCircle } from "lucide-react";
+import {
+  Upload, FileText, Image, X, CheckCircle, AlertCircle,
+  Eye, Clock, Award, Loader2, Filter, ChevronLeft, ChevronRight,
+  ArrowUpDown
+} from "lucide-react";
 import ConfettiEffect from "@/components/dashboard/ConfettiEffect";
 import SuccessModal from "@/components/dashboard/SuccessModal";
 import { Button } from "@/components/ui/button";
@@ -9,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubmissions } from "@/hooks/useSubmissions";
 import { useILTDeadlines } from "@/hooks/useILTDeadlines";
+import { useAppSettings } from "@/hooks/useAppSettings";
 
 interface UploadedFile {
   file: File;
@@ -23,22 +28,36 @@ const ALLOWED_TYPES = [
   "image/webp",
 ];
 
+const ITEMS_PER_PAGE = 5;
+
 const SubmitILT = () => {
   const { profile, refreshProfile } = useAuth();
   const { submitILT, submissions } = useSubmissions();
   const { deadlines } = useILTDeadlines();
+  const { settings } = useAppSettings();
 
   // Create a set of submitted ILT names for efficient lookup
   const submittedIltNames = new Set(submissions.map(s => s.ilt_name));
 
-  // Convert deadlines to iltOptions format for the form
-  const iltOptions = deadlines.map((d) => ({
-    id: d.id,
-    name: d.name,
-    subject: d.subject || "General",
-    dueDate: format(new Date(d.deadline), "MMM d, yyyy"),
-    isDone: submittedIltNames.has(d.name) // Check if already submitted
-  }));
+  // Convert deadlines to iltOptions format for the form, excluding archived ones
+  const iltOptions = deadlines
+    .filter(d => !d.is_archived)
+    .map((d) => {
+      const dueDate = new Date(d.deadline);
+      const isPastDue = dueDate < new Date();
+      const isLateNotAllowed = settings ? !settings.allow_late_submissions && isPastDue : false;
+      const isDone = submittedIltNames.has(d.name);
+
+      return {
+        id: d.id,
+        name: d.name,
+        subject: d.subject || "General",
+        dueDate: format(dueDate, "MMM d, yyyy"),
+        isDone,
+        isLocked: isLateNotAllowed && !isDone, // Lock if late and strict mode is on
+        isPastDue
+      };
+    });
 
   const [selectedILT, setSelectedILT] = useState("");
   const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
@@ -47,6 +66,12 @@ const SubmitILT = () => {
   const [showConfetti, setShowConfetti] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState("");
+
+  // Pagination & Sorting State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filterStatus, setFilterStatus] = useState<"all" | "graded" | "pending">("all");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentPoints = profile?.total_points || 0;
@@ -146,6 +171,32 @@ const SubmitILT = () => {
     removeFile();
   };
 
+  // Logic: Filter -> Sort -> Paginate
+  const filteredSubmissions = submissions.filter(s => {
+    if (filterStatus === "all") return true;
+    if (filterStatus === "graded") return s.status === "graded";
+    if (filterStatus === "pending") return s.status === "pending" || s.status === "reviewed"; // Treat 'reviewed' as pending/process
+    return true;
+  });
+
+  const sortedSubmissions = [...filteredSubmissions].sort((a, b) => {
+    const dateA = new Date(a.submitted_at).getTime();
+    const dateB = new Date(b.submitted_at).getTime();
+    return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
+  });
+
+  const totalPages = Math.ceil(sortedSubmissions.length / ITEMS_PER_PAGE);
+
+  // Ensure current page is valid when filtering changes
+  if (currentPage > totalPages && totalPages > 0) {
+    setCurrentPage(totalPages);
+  }
+
+  const paginatedSubmissions = sortedSubmissions.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -197,15 +248,17 @@ const SubmitILT = () => {
                   {iltOptions.map((ilt) => (
                     <button
                       key={ilt.id}
-                      onClick={() => !ilt.isDone && setSelectedILT(prev => prev === ilt.id ? "" : ilt.id)}
-                      disabled={ilt.isDone}
+                      onClick={() => !ilt.isDone && !ilt.isLocked && setSelectedILT(prev => prev === ilt.id ? "" : ilt.id)}
+                      disabled={ilt.isDone || ilt.isLocked}
                       className={cn(
                         "flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 text-left",
                         ilt.isDone
                           ? "border-green-500/30 bg-green-500/5 opacity-80 cursor-default"
-                          : selectedILT === ilt.id
-                            ? "border-accent bg-accent/10"
-                            : "border-border hover:border-accent/50 bg-card"
+                          : ilt.isLocked
+                            ? "border-destructive/30 bg-destructive/5 opacity-80 cursor-not-allowed"
+                            : selectedILT === ilt.id
+                              ? "border-accent bg-accent/10"
+                              : "border-border hover:border-accent/50 bg-card"
                       )}
                     >
                       <div className="flex items-center gap-3">
@@ -213,22 +266,29 @@ const SubmitILT = () => {
                           "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
                           ilt.isDone
                             ? "border-green-500 bg-green-500"
-                            : selectedILT === ilt.id
-                              ? "border-accent bg-accent"
-                              : "border-muted-foreground"
+                            : ilt.isLocked
+                              ? "border-destructive bg-destructive"
+                              : selectedILT === ilt.id
+                                ? "border-accent bg-accent"
+                                : "border-muted-foreground"
                         )}>
-                          {(selectedILT === ilt.id || ilt.isDone) && (
+                          {(selectedILT === ilt.id || ilt.isDone) && !ilt.isLocked && (
                             <CheckCircle className={cn(
                               "w-3 h-3",
                               ilt.isDone ? "text-white" : "text-accent-foreground"
                             )} />
+                          )}
+                          {ilt.isLocked && (
+                            <X className="w-3 h-3 text-white" />
                           )}
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
                             <span className={cn(
                               "font-medium",
-                              ilt.isDone ? "text-muted-foreground line-through" : "text-foreground"
+                              ilt.isDone ? "text-muted-foreground line-through" :
+                                ilt.isLocked ? "text-destructive" :
+                                  "text-foreground"
                             )}>
                               {ilt.name}
                             </span>
@@ -240,14 +300,19 @@ const SubmitILT = () => {
                                 Done
                               </span>
                             )}
+                            {ilt.isLocked && (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-destructive/20 text-destructive font-bold uppercase">
+                                Closed
+                              </span>
+                            )}
                           </div>
                           <span className="text-sm text-muted-foreground md:hidden">
-                            {ilt.isDone ? "Submitted" : `Due: ${ilt.dueDate}`}
+                            {ilt.isDone ? "Submitted" : ilt.isLocked ? "Deadline Passed" : `Due: ${ilt.dueDate}`}
                           </span>
                         </div>
                       </div>
                       <span className="text-sm text-muted-foreground hidden md:inline">
-                        {ilt.isDone ? "Submitted" : `Due: ${ilt.dueDate}`}
+                        {ilt.isDone ? "Submitted" : ilt.isLocked ? "Deadline Passed" : `Due: ${ilt.dueDate}`}
                       </span>
                     </button>
                   ))}
@@ -387,6 +452,156 @@ const SubmitILT = () => {
                   </p>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Submissions History / Grades */}
+          {submissions.length > 0 && (
+            <div className="space-y-4 pt-4">
+              <div className="flex items-center justify-between">
+                <h2 className="section-title text-2xl">My Submissions</h2>
+
+                {/* Sorting Controls */}
+                <div className="flex gap-2">
+                  {/* Filter Dropdown */}
+                  <div className="relative group">
+                    <button className="flex items-center gap-2 px-3 py-1.5 text-sm bg-card border border-border rounded-lg hover:bg-muted transition-colors">
+                      <Filter className="w-4 h-4 text-muted-foreground" />
+                      <span className="capitalize">{filterStatus === 'all' ? 'All' : filterStatus}</span>
+                    </button>
+                    <div className="absolute right-0 mt-2 w-32 bg-popover border border-border rounded-xl shadow-xl p-1 hidden group-hover:block z-20">
+                      {(['all', 'graded', 'pending'] as const).map(status => (
+                        <button
+                          key={status}
+                          onClick={() => { setFilterStatus(status); setCurrentPage(1); }}
+                          className={cn(
+                            "w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors capitalize",
+                            filterStatus === status && "bg-accent/10 text-accent font-medium"
+                          )}
+                        >
+                          {status}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Sort Button */}
+                  <button
+                    onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+                    className="flex items-center gap-2 px-3 py-1.5 text-sm bg-card border border-border rounded-lg hover:bg-muted transition-colors"
+                    title={sortOrder === 'newest' ? "Newest First" : "Oldest First"}
+                  >
+                    <ArrowUpDown className="w-4 h-4 text-muted-foreground" />
+                    <span className="hidden sm:inline">{sortOrder === 'newest' ? 'Newest' : 'Oldest'}</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid gap-4">
+                {paginatedSubmissions.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground card-elevated">
+                    <Filter className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                    <p>No submissions match your filter.</p>
+                  </div>
+                ) : (
+                  paginatedSubmissions.map((submission) => (
+                    <div
+                      key={submission.id}
+                      className="card-elevated p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in fade-in"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className={cn(
+                          "w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm",
+                          submission.status === 'graded' ? "bg-green-500/20 text-green-600" :
+                            submission.status === 'reviewed' ? "bg-accent/20 text-accent" :
+                              "bg-muted text-muted-foreground"
+                        )}>
+                          {submission.status === 'graded' ? <CheckCircle className="w-6 h-6" /> :
+                            submission.status === 'reviewed' ? <Eye className="w-6 h-6" /> :
+                              <Clock className="w-6 h-6" />}
+                        </div>
+
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-bold text-lg text-foreground">{submission.ilt_name}</h3>
+                            <span className={cn(
+                              "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider",
+                              submission.status === 'graded' ? "bg-green-500/10 text-green-600" :
+                                submission.status === 'reviewed' ? "bg-accent/10 text-accent" :
+                                  "bg-yellow-500/10 text-yellow-600"
+                            )}>
+                              {submission.status}
+                            </span>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <FileText className="w-3.5 h-3.5" />
+                              {submission.file_name}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3.5 h-3.5" />
+                              {format(new Date(submission.submitted_at), "MMM d, yyyy • h:mm a")}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Grade Section */}
+                      {submission.grade ? (
+                        <div className="flex items-center gap-6 w-full md:w-auto bg-muted/30 p-3 rounded-xl border border-border/50">
+                          <div className="text-center">
+                            <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-1">Grade</p>
+                            <p className="text-2xl font-black text-green-600 leading-none">{submission.grade}</p>
+                          </div>
+                          <div className="w-px h-8 bg-border/50"></div>
+                          <div className="text-center">
+                            <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-1">Points</p>
+                            <div className="flex items-center gap-1">
+                              <Award className="w-4 h-4 text-accent" />
+                              <span className="text-xl font-bold text-accent leading-none">+{submission.points_awarded}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-muted-foreground bg-muted/20 px-4 py-2 rounded-lg text-sm w-full md:w-auto justify-center">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Waiting for grade...</span>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between pt-4 border-t border-border/50">
+                  <p className="text-sm text-muted-foreground">
+                    Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredSubmissions.length)} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredSubmissions.length)} of {filteredSubmissions.length}
+                  </p>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="p-2 rounded-lg border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="flex items-center px-4 font-medium text-sm bg-muted/30 rounded-lg">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="p-2 rounded-lg border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

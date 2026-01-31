@@ -11,23 +11,30 @@ import {
     X,
     RotateCcw,
     Loader2,
+    Archive,
+    ReplyAll
 } from "lucide-react";
+import { ToastAction } from "@/components/ui/toast";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { useILTDeadlines, ILTDeadline } from "@/hooks/useILTDeadlines";
 import { cn } from "@/lib/utils";
 
 const AdminDeadlines = () => {
+    const { toast } = useToast();
     const {
         deadlines,
         isLoading,
         addDeadline,
         updateDeadline,
         deleteDeadline,
+        archiveDeadline,
         resetToDefaults,
     } = useILTDeadlines();
 
     const [isAdding, setIsAdding] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [showArchived, setShowArchived] = useState(false);
     const [formData, setFormData] = useState({
         name: "",
         subject: "",
@@ -86,11 +93,17 @@ const AdminDeadlines = () => {
         }
     };
 
+    const handleArchive = async (id: string, isArchived: boolean) => {
+        await archiveDeadline(id, isArchived);
+    };
+
     const handleReset = async () => {
         if (confirm("Reset all deadlines to defaults? This will remove any custom deadlines.")) {
             await resetToDefaults();
         }
     };
+
+    const displayedDeadlines = deadlines.filter(d => !!d.is_archived === showArchived);
 
     if (isLoading) {
         return (
@@ -121,6 +134,14 @@ const AdminDeadlines = () => {
                         <Button variant="outline" onClick={handleReset} className="gap-2">
                             <RotateCcw className="w-4 h-4" />
                             Reset
+                        </Button>
+                        <Button
+                            variant="secondary"
+                            onClick={() => setShowArchived(!showArchived)}
+                            className={cn("gap-2", showArchived && "bg-accent/20 text-accent border border-accent/50")}
+                        >
+                            <Archive className="w-4 h-4" />
+                            {showArchived ? "Hide Archive" : "Show Archive"}
                         </Button>
                         <Button onClick={handleAdd} className="btn-gold gap-2">
                             <Plus className="w-4 h-4" />
@@ -215,19 +236,31 @@ const AdminDeadlines = () => {
                 {/* Deadlines List */}
                 <div className="card-elevated p-6">
                     <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
-                        <FileText className="w-5 h-5 text-accent" />
-                        Current Deadlines ({deadlines.length})
+                        {showArchived ? (
+                            <>
+                                <Archive className="w-5 h-5 text-accent" />
+                                Archived Deadlines ({displayedDeadlines.length})
+                            </>
+                        ) : (
+                            <>
+                                <FileText className="w-5 h-5 text-accent" />
+                                Current Deadlines ({displayedDeadlines.length})
+                            </>
+                        )}
                     </h3>
 
-                    {deadlines.length === 0 ? (
+                    {displayedDeadlines.length === 0 ? (
                         <div className="text-center py-12 text-muted-foreground">
-                            <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                            <p>No deadlines set</p>
-                            <p className="text-sm">Click "Add Deadline" to create one</p>
+                            {showArchived ? (
+                                <Archive className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                            ) : (
+                                <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                            )}
+                            <p>No {showArchived ? "archived" : "current"} deadlines</p>
                         </div>
                     ) : (
                         <div className="space-y-3">
-                            {deadlines.map((deadline) => {
+                            {displayedDeadlines.map((deadline) => {
                                 const dueDate = new Date(deadline.deadline);
                                 const isPast = dueDate < new Date();
 
@@ -238,7 +271,7 @@ const AdminDeadlines = () => {
                                             "flex items-center justify-between p-4 rounded-xl border transition-all",
                                             editingId === deadline.id
                                                 ? "border-accent bg-accent/10"
-                                                : isPast
+                                                : isPast && !showArchived
                                                     ? "border-muted bg-muted/30"
                                                     : "border-border bg-card hover:border-accent/50"
                                         )}
@@ -262,7 +295,7 @@ const AdminDeadlines = () => {
                                                     <p
                                                         className={cn(
                                                             "font-medium truncate",
-                                                            isPast ? "text-muted-foreground" : "text-foreground"
+                                                            isPast && !showArchived ? "text-muted-foreground" : "text-foreground"
                                                         )}
                                                     >
                                                         {deadline.name}
@@ -270,6 +303,11 @@ const AdminDeadlines = () => {
                                                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/10 text-accent font-medium uppercase tracking-wider">
                                                         {deadline.subject || "General"}
                                                     </span>
+                                                    {deadline.is_archived && (
+                                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium uppercase tracking-wider">
+                                                            Archived
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <p className="text-sm text-muted-foreground truncate">
                                                     {deadline.description || "No description"}
@@ -286,6 +324,28 @@ const AdminDeadlines = () => {
                                         </div>
 
                                         <div className="flex items-center gap-2 flex-shrink-0">
+                                            {showArchived ? (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => handleArchive(deadline.id, false)}
+                                                    className="hover:bg-accent/20"
+                                                    title="Restore"
+                                                >
+                                                    <ReplyAll className="w-4 h-4 text-accent" />
+                                                </Button>
+                                            ) : (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => handleArchive(deadline.id, true)}
+                                                    className="hover:bg-muted"
+                                                    title="Archive"
+                                                >
+                                                    <Archive className="w-4 h-4 text-muted-foreground" />
+                                                </Button>
+                                            )}
+
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
@@ -311,20 +371,22 @@ const AdminDeadlines = () => {
                 </div>
 
                 {/* Info Card */}
-                <div className="bg-accent/10 border border-accent/30 rounded-xl p-4 flex items-start gap-4">
-                    <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center flex-shrink-0">
-                        <Calendar className="w-5 h-5 text-accent-foreground" />
+                {!showArchived && (
+                    <div className="bg-accent/10 border border-accent/30 rounded-xl p-4 flex items-start gap-4">
+                        <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center flex-shrink-0">
+                            <Calendar className="w-5 h-5 text-accent-foreground" />
+                        </div>
+                        <div>
+                            <p className="font-medium text-foreground">
+                                Deadlines sync automatically
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                                Changes made here will immediately reflect in the student Study Calendar
+                                and ILT submission page.
+                            </p>
+                        </div>
                     </div>
-                    <div>
-                        <p className="font-medium text-foreground">
-                            Deadlines sync automatically
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                            Changes made here will immediately reflect in the student Study Calendar
-                            and ILT submission page.
-                        </p>
-                    </div>
-                </div>
+                )}
             </div>
         </main>
     );
