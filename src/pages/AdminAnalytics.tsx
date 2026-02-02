@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { BarChart3, TrendingUp, Users, Calendar, Loader2 } from "lucide-react";
+import { BarChart3, TrendingUp, Users, Calendar, Loader2, Trophy } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,10 +14,12 @@ const AdminAnalytics = () => {
         avgGradeDiff: 0,
         activeStudents: 0,
         totalSubmissions: 0,
-        upcomingDeadlines: 0
+        upcomingDeadlines: 0,
+        avgSessionDuration: 0
     });
     const [chartData, setChartData] = useState<any[]>([]);
     const [recentActivity, setRecentActivity] = useState<any[]>([]);
+    const [topUsers, setTopUsers] = useState<any[]>([]);
 
     useEffect(() => {
         fetchAnalytics();
@@ -35,7 +37,17 @@ const AdminAnalytics = () => {
 
             if (subError) throw subError;
 
-            // 2. Fetch Active Students (Total students)
+            // 2. Fetch Active Students (Total students) & Profiles for stats
+            const { data: studentProfiles, error: profileError } = await supabase
+                .from("profiles")
+                .select("user_id, display_name, avatar_url, total_time_spent_seconds, session_count")
+                .order("total_time_spent_seconds", { ascending: false });
+
+            if (profileError) throw profileError;
+
+            // Filter out teachers/admins if necessary? Assuming profiles contains mostly students or we filter by role
+            // Better to join with roles, but for now assuming high time spent implies valid user.
+            // Let's rely on the role fetch for exact count.
             const { count: studentCount, error: roleError } = await supabase
                 .from("user_roles")
                 .select("*", { count: 'exact', head: true })
@@ -58,6 +70,12 @@ const AdminAnalytics = () => {
             const totalGrade = gradedSubmissions.reduce((sum, s) => sum + Number(s.grade), 0);
             const currentAvg = gradedSubmissions.length > 0 ? (totalGrade / gradedSubmissions.length) : 0;
             const activeStudents = studentCount || 0;
+
+            // Session Stats
+            const totalTime = studentProfiles?.reduce((sum, p) => sum + (p.total_time_spent_seconds || 0), 0) || 0;
+            const totalSessions = studentProfiles?.reduce((sum, p) => sum + (p.session_count || 0), 0) || 0;
+            const avgSessionDuration = totalSessions > 0 ? totalTime / totalSessions : 0;
+
             const now = new Date();
             const nextWeek = new Date();
             nextWeek.setDate(now.getDate() + 7);
@@ -71,8 +89,12 @@ const AdminAnalytics = () => {
                 avgGradeDiff: 0,
                 activeStudents,
                 totalSubmissions,
-                upcomingDeadlines: upcomingCount
+                upcomingDeadlines: upcomingCount,
+                avgSessionDuration
             });
+
+            // Set Top Users
+            setTopUsers(studentProfiles?.slice(0, 5) || []);
 
             const weeks = [];
             for (let i = 5; i >= 0; i--) {
@@ -97,8 +119,8 @@ const AdminAnalytics = () => {
             // Recent activity processing
             const recentSubs = submissions?.slice(0, 5) || [];
             const userIds = [...new Set([...recentSubs.map(s => s.user_id), ...(badges?.map(b => b.user_id) || [])])];
-            const { data: profiles } = await supabase.from("profiles").select("user_id, display_name").in("user_id", userIds);
-            const profileMap = new Map(profiles?.map(p => [p.user_id, p.display_name]));
+            // We already have profiles, so map from that
+            const profileMap = new Map(studentProfiles?.map(p => [p.user_id, p.display_name]));
 
             const activityList = [
                 ...recentSubs.map(s => ({
@@ -153,7 +175,7 @@ const AdminAnalytics = () => {
                 </div>
 
                 {/* KPI Cards */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Avg. Performance</CardTitle>
@@ -194,6 +216,18 @@ const AdminAnalytics = () => {
                             <p className="text-xs text-muted-foreground">Next 7 days</p>
                         </CardContent>
                     </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Class Avg Session</CardTitle>
+                            <Trophy className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">
+                                {Math.floor(stats.avgSessionDuration / 60)}m
+                            </div>
+                            <p className="text-xs text-muted-foreground">Per login session</p>
+                        </CardContent>
+                    </Card>
                 </div>
 
                 {/* Charts and Activity */}
@@ -220,36 +254,70 @@ const AdminAnalytics = () => {
                         </CardContent>
                     </Card>
 
-                    <Card className="col-span-3">
-                        <CardHeader>
-                            <CardTitle>Recent Activity</CardTitle>
-                            <CardDescription>Latest student actions.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-8">
-                                {recentActivity.length === 0 ? (
-                                    <p className="text-muted-foreground text-center py-4">No recent activity.</p>
-                                ) : (
-                                    recentActivity.map((activity, i) => (
-                                        <div key={i} className="flex items-center">
-                                            <div className={`w-9 h-9 rounded-full ${activity.color} flex items-center justify-center font-bold mr-4`}>
-                                                {activity.initials}
+                    <div className="col-span-3 space-y-4">
+                        {/* Top Active Students */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Top Active Students</CardTitle>
+                                <CardDescription>Most engaged learners by time spent.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-4">
+                                    {topUsers.map((user, i) => (
+                                        <div key={user.user_id} className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-xs border border-primary/20 overflow-hidden">
+                                                    {user.avatar_url ? (
+                                                        <img src={user.avatar_url} alt={user.display_name} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        (user.display_name?.[0] || "U").toUpperCase()
+                                                    )}
+                                                </div>
+                                                <div className="space-y-0.5">
+                                                    <p className="text-sm font-medium leading-none">{user.display_name}</p>
+                                                    <p className="text-xs text-muted-foreground">{user.session_count || 0} sessions</p>
+                                                </div>
                                             </div>
-                                            <div className="ml-4 space-y-1">
-                                                <p className="text-sm font-medium leading-none">{activity.user}</p>
-                                                <p className="text-sm text-muted-foreground">{activity.action}</p>
-                                            </div>
-                                            <div className="ml-auto text-xs text-muted-foreground">
-                                                {formatDistanceToNow(new Date(activity.time), { addSuffix: true })}
+                                            <div className="text-sm font-bold text-accent">
+                                                {Math.floor((user.total_time_spent_seconds || 0) / 3600)}h {Math.floor(((user.total_time_spent_seconds || 0) % 3600) / 60)}m
                                             </div>
                                         </div>
-                                    ))
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Recent Activity */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Recent Activity</CardTitle>
+                                <CardDescription>Latest student actions.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-6">
+                                    {recentActivity.length === 0 ? (
+                                        <p className="text-muted-foreground text-center py-4">No recent activity.</p>
+                                    ) : (
+                                        recentActivity.map((activity, i) => (
+                                            <div key={i} className="flex items-center">
+                                                <div className={`w-8 h-8 rounded-full ${activity.color} flex items-center justify-center font-bold mr-3`}>
+                                                    {activity.initials}
+                                                </div>
+                                                <div className="flex-1 space-y-1">
+                                                    <p className="text-sm font-medium leading-none">{activity.user}</p>
+                                                    <p className="text-xs text-muted-foreground truncate max-w-[150px]" title={activity.action}>{activity.action}</p>
+                                                </div>
+                                                <div className="text-xs text-muted-foreground whitespace-nowrap">
+                                                    {formatDistanceToNow(new Date(activity.time), { addSuffix: true })}
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </div>
-            </div>
         </main>
     );
 };

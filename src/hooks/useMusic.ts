@@ -160,6 +160,27 @@ export const useMusic = () => {
         }
     };
 
+    const updateLibraryTrack = async (id: string, title: string, artist: string, url: string) => {
+        try {
+            const { error } = await (supabase as any)
+                .from("music_library")
+                .update({
+                    title,
+                    artist,
+                    url
+                })
+                .eq("id", id);
+
+            if (error) throw error;
+            toast.success("Song updated successfully");
+            return true;
+        } catch (error) {
+            console.error("Error updating song:", error);
+            toast.error("Failed to update song");
+            return false;
+        }
+    };
+
     return {
         tracks,
         isLoading,
@@ -169,6 +190,7 @@ export const useMusic = () => {
         // Library exports
         fetchLibraryTracks,
         addLibraryTrack,
+        updateLibraryTrack,
         deleteLibraryTrack
     };
 };

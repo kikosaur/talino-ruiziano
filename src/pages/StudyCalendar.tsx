@@ -45,6 +45,7 @@ const statusConfig = {
 
 const StudyCalendar = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const { submissions, isLoading: submissionsLoading } = useSubmissions();
   const { deadlines: iltDeadlines, isLoading: deadlinesLoading } = useILTDeadlines();
 
@@ -54,26 +55,28 @@ const StudyCalendar = () => {
   const deadlinesWithStatus: DeadlineWithStatus[] = useMemo(() => {
     const now = new Date();
 
-    return iltDeadlines.map((ilt) => {
-      const deadlineDate = new Date(ilt.deadline);
+    return iltDeadlines
+      .filter(ilt => !ilt.is_archived)
+      .map((ilt) => {
+        const deadlineDate = new Date(ilt.deadline);
 
-      // Check if this ILT was submitted
-      const submission = submissions.find((s) => s.ilt_name === ilt.name);
+        // Check if this ILT was submitted
+        const submission = submissions.find((s) => s.ilt_name === ilt.name);
 
-      if (submission) {
-        return {
-          name: ilt.name,
-          subject: ilt.subject || "General",
-          deadline: deadlineDate,
-          status: "completed" as DeadlineStatus,
-          submittedAt: new Date(submission.submitted_at),
-        };
-      } else if (isBefore(deadlineDate, now)) {
-        return { name: ilt.name, subject: ilt.subject || "General", deadline: deadlineDate, status: "overdue" as DeadlineStatus };
-      } else {
-        return { name: ilt.name, subject: ilt.subject || "General", deadline: deadlineDate, status: "upcoming" as DeadlineStatus };
-      }
-    });
+        if (submission) {
+          return {
+            name: ilt.name,
+            subject: ilt.subject || "General",
+            deadline: deadlineDate,
+            status: "completed" as DeadlineStatus,
+            submittedAt: new Date(submission.submitted_at),
+          };
+        } else if (isBefore(deadlineDate, now)) {
+          return { name: ilt.name, subject: ilt.subject || "General", deadline: deadlineDate, status: "overdue" as DeadlineStatus };
+        } else {
+          return { name: ilt.name, subject: ilt.subject || "General", deadline: deadlineDate, status: "upcoming" as DeadlineStatus };
+        }
+      });
   }, [submissions, iltDeadlines]);
 
   // Get days in current month view
@@ -89,9 +92,26 @@ const StudyCalendar = () => {
     return deadlinesWithStatus.filter((d) => isSameDay(d.deadline, day));
   };
 
+  const handleDayClick = (day: Date) => {
+    setSelectedDate(day);
+  };
+
+  const clearSelection = () => {
+    setSelectedDate(null);
+  };
+
+  // Filter deadlines for the list view
+  const displayDeadlines = selectedDate
+    ? getDeadlinesForDay(selectedDate)
+    : deadlinesWithStatus;
+
   const goToPreviousMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
   const goToNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
-  const goToToday = () => setCurrentMonth(new Date());
+  const goToToday = () => {
+    const today = new Date();
+    setCurrentMonth(today);
+    setSelectedDate(today);
+  };
 
   // Stats
   const stats = {
@@ -198,12 +218,14 @@ const StudyCalendar = () => {
                   return (
                     <div
                       key={day.toISOString()}
+                      onClick={() => handleDayClick(day)}
                       className={cn(
-                        "aspect-square p-1 rounded-lg border transition-all",
-                        isCurrentDay
-                          ? "border-accent bg-accent/10"
-                          : "border-transparent hover:border-border",
-                        hasDeadlines && "cursor-pointer hover:bg-muted/30"
+                        "aspect-square p-1 rounded-lg border transition-all cursor-pointer",
+                        isSameDay(day, selectedDate || new Date(0))
+                          ? "border-accent bg-accent/20 ring-2 ring-accent/30"
+                          : isCurrentDay
+                            ? "border-accent bg-accent/5"
+                            : "border-transparent hover:border-border hover:bg-muted/30"
                       )}
                     >
                       <div className="h-full flex flex-col">
@@ -248,50 +270,62 @@ const StudyCalendar = () => {
 
             {/* Upcoming Deadlines List */}
             <div className="card-elevated p-6 space-y-4">
-              <h3 className="font-semibold text-lg text-foreground">📅 All Deadlines</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-lg text-foreground">
+                  {selectedDate ? `📅 Deadlines for ${format(selectedDate, "MMM d")}` : "📅 All Deadlines"}
+                </h3>
+                {selectedDate && (
+                  <Button variant="ghost" size="sm" onClick={clearSelection} className="h-8 text-xs">
+                    Show All
+                  </Button>
+                )}
+              </div>
               <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                {deadlinesWithStatus.map((deadline, index) => {
-                  const config = statusConfig[deadline.status];
-                  const StatusIcon = config.icon;
+                {displayDeadlines.length === 0 ? (
+                  <p className="text-muted-foreground text-sm py-4 text-center">No deadlines for this date.</p>
+                ) : (
+                  displayDeadlines.map((deadline, index) => {
+                    const config = statusConfig[deadline.status];
+                    const StatusIcon = config.icon;
 
-                  return (
-                    <div
-                      key={index}
-                      className={cn(
-                        "p-3 rounded-lg border",
-                        config.bgClass,
-                        config.borderClass
-                      )}
-                    >
-                      <div className="flex items-start gap-3">
-                        <StatusIcon className={cn("w-5 h-5 shrink-0 mt-0.5", config.textClass)} />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-0.5">
-                            <p className="text-sm font-medium text-foreground truncate">
-                              {deadline.name}
+                    return (
+                      <div
+                        key={index}
+                        className={cn(
+                          "p-3 rounded-lg border",
+                          config.bgClass,
+                          config.borderClass
+                        )}
+                      >
+                        <div className="flex items-start gap-3">
+                          <StatusIcon className={cn("w-5 h-5 shrink-0 mt-0.5", config.textClass)} />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <p className="text-sm font-medium text-foreground truncate">
+                                {deadline.name}
+                              </p>
+                              {deadline.subject && (
+                                <span className={cn(
+                                  "text-[10px] px-1.5 py-0 rounded-full font-bold uppercase",
+                                  deadline.status === "completed" ? "bg-green-500/20 text-green-700" : "bg-accent/20 text-accent"
+                                )}>
+                                  {deadline.subject}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Due: {format(deadline.deadline, "MMM d, yyyy")}
                             </p>
-                            {deadline.subject && (
-                              <span className={cn(
-                                "text-[10px] px-1.5 py-0 rounded-full font-bold uppercase",
-                                deadline.status === "completed" ? "bg-green-500/20 text-green-700" : "bg-accent/20 text-accent"
-                              )}>
-                                {deadline.subject}
-                              </span>
+                            {deadline.submittedAt && (
+                              <p className="text-xs text-green-600 mt-1">
+                                ✓ Submitted {format(deadline.submittedAt, "MMM d")}
+                              </p>
                             )}
                           </div>
-                          <p className="text-xs text-muted-foreground">
-                            Due: {format(deadline.deadline, "MMM d, yyyy")}
-                          </p>
-                          {deadline.submittedAt && (
-                            <p className="text-xs text-green-600 mt-1">
-                              ✓ Submitted {format(deadline.submittedAt, "MMM d")}
-                            </p>
-                          )}
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  }))}
               </div>
             </div>
           </div>

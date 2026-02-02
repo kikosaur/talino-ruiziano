@@ -15,6 +15,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+import { SessionHistory } from "@/components/profile/SessionHistory";
 
 const StudentSettings = () => {
     const { user, profile, refreshProfile } = useAuth();
@@ -337,10 +338,13 @@ const StudentSettings = () => {
                                 </CardFooter>
                             </form>
                         </Card>
+
+                        {/* Session History Section */}
+                        <SessionHistory />
                     </div>
                 </div>
-            </main>
-        </div>
+            </main >
+        </div >
     );
 };
 

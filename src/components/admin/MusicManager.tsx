@@ -12,7 +12,8 @@ import {
     Pause,
     Search,
     Headphones,
-    ExternalLink
+    ExternalLink,
+    Pencil
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -28,7 +29,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 const MusicManager = () => {
-    const { fetchLibraryTracks, addLibraryTrack, deleteLibraryTrack } = useMusic();
+    const { fetchLibraryTracks, addLibraryTrack, updateLibraryTrack, deleteLibraryTrack } = useMusic();
     const [libraryTracks, setLibraryTracks] = useState<Track[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,6 +37,7 @@ const MusicManager = () => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     // Form state
+    const [editingTrack, setEditingTrack] = useState<Track | null>(null);
     const [title, setTitle] = useState("");
     const [artist, setArtist] = useState("");
     const [url, setUrl] = useState("");
@@ -61,7 +63,27 @@ const MusicManager = () => {
         };
     }, []);
 
-    const handleAdd = async (e: React.FormEvent) => {
+    const resetForm = () => {
+        setTitle("");
+        setArtist("");
+        setUrl("");
+        setEditingTrack(null);
+    };
+
+    const openAddDialog = () => {
+        resetForm();
+        setIsDialogOpen(true);
+    };
+
+    const openEditDialog = (track: Track) => {
+        setEditingTrack(track);
+        setTitle(track.title);
+        setArtist(track.artist);
+        setUrl(track.url);
+        setIsDialogOpen(true);
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!title || !artist || !url) {
             toast.error("Please fill in all fields");
@@ -69,11 +91,16 @@ const MusicManager = () => {
         }
 
         setIsSubmitting(true);
-        const success = await addLibraryTrack(title, artist, url);
+        let success = false;
+
+        if (editingTrack) {
+            success = await updateLibraryTrack(editingTrack.id.toString(), title, artist, url);
+        } else {
+            success = await addLibraryTrack(title, artist, url);
+        }
+
         if (success) {
-            setTitle("");
-            setArtist("");
-            setUrl("");
+            resetForm();
             loadTracks();
             setIsDialogOpen(false);
         }
@@ -132,19 +159,22 @@ const MusicManager = () => {
 
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button className="gap-2 bg-accent hover:bg-accent/90 text-accent-foreground shadow-lg shadow-accent/20">
+                        <Button
+                            onClick={openAddDialog}
+                            className="gap-2 bg-accent hover:bg-accent/90 text-accent-foreground shadow-lg shadow-accent/20"
+                        >
                             <Plus className="w-4 h-4" />
                             Add New Song
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-md">
                         <DialogHeader>
-                            <DialogTitle>Add Song to Library</DialogTitle>
+                            <DialogTitle>{editingTrack ? "Edit Song" : "Add Song to Library"}</DialogTitle>
                             <DialogDescription>
-                                Add a high-quality MP3 link for students to listen to.
+                                {editingTrack ? "Update the song details below." : "Add a high-quality MP3 link for students to listen to."}
                             </DialogDescription>
                         </DialogHeader>
-                        <form onSubmit={handleAdd} className="space-y-4 py-4">
+                        <form onSubmit={handleSubmit} className="space-y-4 py-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Song Title</label>
                                 <Input
@@ -174,7 +204,7 @@ const MusicManager = () => {
                                 <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
                                 <Button type="submit" disabled={isSubmitting}>
                                     {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                                    Add Song
+                                    {editingTrack ? "Save Changes" : "Add Song"}
                                 </Button>
                             </DialogFooter>
                         </form>
@@ -260,14 +290,26 @@ const MusicManager = () => {
                                     >
                                         <ExternalLink className="w-3 h-3" /> Source
                                     </a>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-8 px-2"
-                                        onClick={() => handleDelete(track.id.toString(), track.title)}
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </Button>
+                                    <div className="flex items-center gap-1">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-muted-foreground hover:text-accent hover:bg-accent/10 h-8 px-2"
+                                            onClick={() => openEditDialog(track)}
+                                            title="Edit Song"
+                                        >
+                                            <Pencil className="w-4 h-4" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-8 px-2"
+                                            onClick={() => handleDelete(track.id.toString(), track.title)}
+                                            title="Delete Song"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
