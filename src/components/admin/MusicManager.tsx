@@ -86,11 +86,14 @@ const MusicManager = () => {
     const processUrl = (inputUrl: string) => {
         let processed = inputUrl.trim();
 
-        // Handle Google Drive
-        if (processed.includes('drive.google.com') && processed.includes('/file/d/')) {
-            const matches = processed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+        // Handle Google Drive (various formats)
+        // Matches: /file/d/ID, id=ID, open?id=ID
+        const driveRegex = /(?:\/file\/d\/|id=|open\?id=)([a-zA-Z0-9_-]+)/;
+        if (processed.includes('google.com') && driveRegex.test(processed)) {
+            const matches = processed.match(driveRegex);
             if (matches && matches[1]) {
-                return `https://drive.google.com/uc?export=download&id=${matches[1]}`;
+                // Use docs.google.com for better streaming reliability
+                return `https://docs.google.com/uc?export=download&id=${matches[1]}`;
             }
         }
 
