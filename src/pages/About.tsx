@@ -136,7 +136,7 @@ const About = () => {
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8 max-w-6xl mx-auto">
+                    <div className="flex flex-wrap justify-center gap-6 md:gap-8 max-w-6xl mx-auto">
                         {[
                             { name: "Kim Ramos Ciriaca", image: "/creators/Ciriaca Kim, Ramos.jpg" },
                             { name: "RJel Santiago Atraje", image: "/creators/Atraje, RJel Santiago.jpg" },
@@ -144,9 +144,9 @@ const About = () => {
                             { name: "Eddrian Santos Gaboy", image: "/creators/Gaboy, Eddrian Santos.jpg" },
                             { name: "Keizel B. Quinones", image: "/creators/Quinones, Keizel B.jpg" },
                             { name: "Robby Rian A. Yacat", image: "/creators/Yacat, Robby Rian A.jpg" },
-                            { name: "To Be Added", image: null },
+                            { name: "Crissa Jane Catacutan", image: "/creators/Crissa Jane Catacutan.jfif" },
                         ].map((creator, index) => (
-                            <div key={index} className="card-elevated p-6 text-center hover:scale-[1.02] transition-transform flex flex-col items-center">
+                            <div key={index} className="card-elevated p-6 text-center hover:scale-[1.02] transition-transform flex flex-col items-center w-full sm:w-[calc(50%-1.5rem)] md:w-[calc(33.33%-2rem)] lg:w-[calc(25%-2rem)]">
                                 <div className="w-32 h-32 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full mb-4 flex items-center justify-center overflow-hidden border-4 border-background shadow-lg shrink-0">
                                     {creator.image ? (
                                         <img
