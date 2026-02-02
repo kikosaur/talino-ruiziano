@@ -83,6 +83,25 @@ const MusicManager = () => {
         setIsDialogOpen(true);
     };
 
+    const processUrl = (inputUrl: string) => {
+        let processed = inputUrl.trim();
+
+        // Handle Google Drive
+        if (processed.includes('drive.google.com') && processed.includes('/file/d/')) {
+            const matches = processed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+            if (matches && matches[1]) {
+                return `https://drive.google.com/uc?export=download&id=${matches[1]}`;
+            }
+        }
+
+        // Handle Dropbox
+        if (processed.includes('dropbox.com') && processed.includes('dl=0')) {
+            return processed.replace('dl=0', 'dl=1');
+        }
+
+        return processed;
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!title || !artist || !url) {
@@ -90,19 +109,24 @@ const MusicManager = () => {
             return;
         }
 
+        const finalUrl = processUrl(url);
+
         setIsSubmitting(true);
         let success = false;
 
         if (editingTrack) {
-            success = await updateLibraryTrack(editingTrack.id.toString(), title, artist, url);
+            success = await updateLibraryTrack(editingTrack.id.toString(), title, artist, finalUrl);
         } else {
-            success = await addLibraryTrack(title, artist, url);
+            success = await addLibraryTrack(title, artist, finalUrl);
         }
 
         if (success) {
             resetForm();
             loadTracks();
             setIsDialogOpen(false);
+            if (finalUrl !== url) {
+                toast.success("Link automatically converted for streaming!");
+            }
         }
         setIsSubmitting(false);
     };
