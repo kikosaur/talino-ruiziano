@@ -92,9 +92,14 @@ const MusicManager = () => {
         if (processed.includes('google.com') && driveRegex.test(processed)) {
             const matches = processed.match(driveRegex);
             if (matches && matches[1]) {
-                // Use docs.google.com for better streaming reliability
-                return `https://docs.google.com/uc?export=download&id=${matches[1]}`;
+                // Revert to drive.google.com as docs.google.com can be flaky for audio streaming
+                return `https://drive.google.com/uc?export=download&id=${matches[1]}`;
             }
+        }
+
+        // Handle GitHub
+        if (processed.includes('github.com') && processed.includes('/blob/')) {
+            return processed.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
         }
 
         // Handle Dropbox
