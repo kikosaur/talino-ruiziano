@@ -29,7 +29,6 @@ const AdminDeadlines = () => {
         updateDeadline,
         deleteDeadline,
         archiveDeadline,
-        resetToDefaults,
     } = useILTDeadlines();
 
     const [isAdding, setIsAdding] = useState(false);
@@ -97,11 +96,7 @@ const AdminDeadlines = () => {
         await archiveDeadline(id, isArchived);
     };
 
-    const handleReset = async () => {
-        if (confirm("Reset all deadlines to defaults? This will remove any custom deadlines.")) {
-            await resetToDefaults();
-        }
-    };
+
 
     const displayedDeadlines = deadlines.filter(d => !!d.is_archived === showArchived);
 
@@ -130,11 +125,7 @@ const AdminDeadlines = () => {
                             Set and manage ILT deadlines that sync with student calendars
                         </p>
                     </div>
-                    <div className="flex gap-2">
-                        <Button variant="outline" onClick={handleReset} className="gap-2">
-                            <RotateCcw className="w-4 h-4" />
-                            Reset
-                        </Button>
+                    <div className="flex items-center gap-3">
                         <Button
                             variant="secondary"
                             onClick={() => setShowArchived(!showArchived)}
@@ -388,7 +379,7 @@ const AdminDeadlines = () => {
                     </div>
                 )}
             </div>
-        </main>
+        </main >
     );
 };
 

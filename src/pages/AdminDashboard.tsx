@@ -1,21 +1,65 @@
 import { Link } from "react-router-dom";
 import { FileText, Users, BarChart3, ArrowRight, Trophy, Clock, Loader2 } from "lucide-react";
 import { useSubmissions } from "@/hooks/useSubmissions";
+import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from "react";
 
 const AdminDashboard = () => {
-  const { submissions, isLoading } = useSubmissions(true);
+  const { submissions, isLoading: submissionsLoading } = useSubmissions(true);
+  const [stats, setStats] = useState({
+    activeStudents: 0,
+    avgGrade: 0,
+    gradedCount: 0
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
 
-  // Calculate stats from real submissions
-  const stats = {
-    totalSubmissions: submissions.length,
-    pendingReview: submissions.filter(s => s.status === "pending").length,
-    totalStudents: new Set(submissions.map(s => s.user_id)).size,
-    gradedCount: submissions.filter(s => s.status === "graded").length,
-  };
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        // Fetch student count
+        const { count: studentCount } = await supabase
+          .from("user_roles")
+          .select("*", { count: 'exact', head: true })
+          .eq("role", "student");
+
+        // Calculate average grade from all graded submissions
+        const { data: gradedSubs } = await supabase
+          .from("submissions")
+          .select("grade")
+          .not("grade", "is", null);
+
+        let avg = 0;
+        if (gradedSubs && gradedSubs.length > 0) {
+          const total = gradedSubs.reduce((sum, s) => sum + Number(s.grade || 0), 0);
+          avg = Math.round(total / gradedSubs.length);
+        }
+
+        setStats({
+          activeStudents: studentCount || 0,
+          avgGrade: avg,
+          gradedCount: gradedSubs?.length || 0
+        });
+      } catch (error) {
+        console.error("Error fetching dashboard stats:", error);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   const recentSubmissions = submissions.slice(0, 5);
 
-  if (isLoading) {
+  const dashboardStats = {
+    totalSubmissions: submissions.length,
+    pendingReview: submissions.filter(s => s.status === "pending").length,
+    totalStudents: stats.activeStudents,
+    gradedCount: stats.gradedCount,
+    avgGrade: stats.avgGrade
+  };
+
+  if (submissionsLoading || loadingStats) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-4">
@@ -40,10 +84,10 @@ const AdminDashboard = () => {
         {/* Quick stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { icon: FileText, label: "Total Submissions", value: stats.totalSubmissions, color: "bg-accent" },
-            { icon: Clock, label: "Pending Review", value: stats.pendingReview, color: "bg-secondary" },
-            { icon: Users, label: "Active Students", value: stats.totalStudents, color: "bg-primary" },
-            { icon: Trophy, label: "Graded", value: stats.gradedCount, color: "bg-green-600" },
+            { icon: FileText, label: "Total Submissions", value: dashboardStats.totalSubmissions, color: "bg-accent" },
+            { icon: Clock, label: "Pending Review", value: dashboardStats.pendingReview, color: "bg-secondary" },
+            { icon: Users, label: "Active Students", value: dashboardStats.totalStudents, color: "bg-primary" },
+            { icon: Trophy, label: `Avg Grade (${dashboardStats.avgGrade}%)`, value: dashboardStats.gradedCount + " Graded", color: "bg-green-600" },
           ].map((stat) => (
             <div key={stat.label} className="card-elevated p-4 md:p-6">
               <div className="flex items-center gap-4">

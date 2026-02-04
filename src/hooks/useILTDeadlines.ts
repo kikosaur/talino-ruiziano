@@ -40,35 +40,7 @@ export const useILTDeadlines = () => {
                 }));
                 setDeadlines(mapped);
 
-                // Migration check: If we have data in localStorage and we are a teacher, sync it
-                if (isTeacher) {
-                    const stored = localStorage.getItem("ilt_deadlines_v2");
-                    if (stored) {
-                        try {
-                            const localDeadlines = JSON.parse(stored);
-                            if (localDeadlines.length > 0) {
-                                console.log("Migrating local deadlines to Supabase...");
-                                for (const local of localDeadlines) {
-                                    const exists = data.some((d: any) => d.name === local.name);
-                                    if (!exists) {
-                                        await (supabase.from("ilt_deadlines") as any).insert({
-                                            name: local.name,
-                                            subject: local.subject || "General",
-                                            description: local.description || "",
-                                            deadline: local.deadline,
-                                            is_archived: false
-                                        });
-                                    }
-                                }
-                                localStorage.removeItem("ilt_deadlines_v2");
-                            } else {
-                                localStorage.removeItem("ilt_deadlines_v2");
-                            }
-                        } catch (e) {
-                            console.error("Migration failed", e);
-                        }
-                    }
-                }
+                // Migration logic removed
             }
         } catch (error) {
             console.error("Error loading deadlines from Supabase:", error);
@@ -202,25 +174,7 @@ export const useILTDeadlines = () => {
         [deadlines]
     );
 
-    const resetToDefaults = useCallback(async () => {
-        if (!isTeacher) return;
-        try {
-            const { error: deleteError } = await (supabase.from("ilt_deadlines") as any).delete().neq("id", "00000000-0000-0000-0000-000000000000");
-
-            if (deleteError) throw deleteError;
-
-            const defaults = [
-                { name: 'Math Week 1', subject: 'Mathematics', description: 'Basic algebraic expressions', deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), is_archived: false },
-                { name: 'English Essay', subject: 'English', description: 'Write a 500-word essay on a classic novel', deadline: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(), is_archived: false },
-                { name: 'Science Lab', subject: 'Science', description: 'Chemical reaction report', deadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), is_archived: false }
-            ];
-
-            await (supabase.from("ilt_deadlines") as any).insert(defaults);
-            await fetchDeadlines();
-        } catch (error) {
-            console.error("Error resetting deadlines:", error);
-        }
-    }, [isTeacher, fetchDeadlines]);
+    // resetToDefaults removed to prevent placeholder data generation
 
     return {
         deadlines,
@@ -230,7 +184,6 @@ export const useILTDeadlines = () => {
         deleteDeadline,
         archiveDeadline,
         getDeadline,
-        resetToDefaults,
         refreshDeadlines: fetchDeadlines,
     };
 };
