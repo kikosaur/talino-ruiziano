@@ -11,7 +11,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
-const ContentSection = ({ type, title }: { type: string, title: string }) => {
+interface ContentSectionProps {
+    type: string;
+    title: string;
+    hideIcon?: boolean;
+    iconPlaceholder?: string;
+    descriptionPlaceholder?: string;
+}
+
+const ContentSection = ({ type, title, hideIcon = false, iconPlaceholder = "Icon Name", descriptionPlaceholder = "Description" }: ContentSectionProps) => {
     const { data: items, isLoading } = usePublicContent(type);
     const addMutation = useAddPublicContent();
     const updateMutation = useUpdatePublicContent();
@@ -74,10 +82,12 @@ const ContentSection = ({ type, title }: { type: string, title: string }) => {
                         {editingId === item.id ? (
                             <div className="flex-1 w-full grid gap-2">
                                 <div className="flex gap-2">
-                                    <Input placeholder="Title" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="flex-1" />
-                                    <Input placeholder="Icon Name" value={formData.icon} onChange={e => setFormData({ ...formData, icon: e.target.value })} className="w-32" />
+                                    <Input placeholder="Title (e.g. Name/Header)" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="flex-1" />
+                                    {!hideIcon && (
+                                        <Input placeholder={iconPlaceholder} value={formData.icon} onChange={e => setFormData({ ...formData, icon: e.target.value })} className="w-48" />
+                                    )}
                                 </div>
-                                <Textarea placeholder="Description" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="h-20" />
+                                <Textarea placeholder={descriptionPlaceholder} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="h-20" />
                                 <div className="flex justify-end gap-2 mt-2">
                                     <Button variant="outline" size="sm" onClick={handleCancel}>Cancel</Button>
                                     <Button size="sm" onClick={() => handleSave(item.id)} className="btn-gold">Save</Button>
@@ -85,12 +95,18 @@ const ContentSection = ({ type, title }: { type: string, title: string }) => {
                             </div>
                         ) : (
                             <>
-                                <div className="w-10 h-10 bg-muted rounded flex items-center justify-center shrink-0 text-xs">
-                                    {item.metadata?.icon || 'Icon'}
-                                </div>
+                                {!hideIcon && (
+                                    <div className="w-12 h-12 bg-muted rounded flex items-center justify-center shrink-0 text-xs overflow-hidden border">
+                                        {item.metadata?.icon?.startsWith('/') || item.metadata?.icon?.startsWith('http') ? (
+                                            <img src={item.metadata.icon} alt="icon" className="w-full h-full object-cover" />
+                                        ) : (
+                                            item.metadata?.icon || 'Icon'
+                                        )}
+                                    </div>
+                                )}
                                 <div className="flex-1">
                                     <p className="font-bold">{item.title}</p>
-                                    <p className="text-sm text-muted-foreground">{item.description}</p>
+                                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{item.description}</p>
                                 </div>
                                 <div className="flex gap-2 mt-2 sm:mt-0">
                                     <button onClick={() => handleEdit(item)} className="p-2 text-muted-foreground hover:text-accent"><Edit2 className="w-4 h-4" /></button>
@@ -104,10 +120,12 @@ const ContentSection = ({ type, title }: { type: string, title: string }) => {
                 {editingId === 'new' ? (
                     <div className="card-elevated p-4 grid gap-2 border-2 border-accent border-dashed">
                         <div className="flex gap-2">
-                            <Input placeholder="Title" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="flex-1" />
-                            <Input placeholder="Icon Name (e.g. Users, Mail)" value={formData.icon} onChange={e => setFormData({ ...formData, icon: e.target.value })} className="w-48" />
+                            <Input placeholder="Title (e.g. Name/Header)" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="flex-1" />
+                            {!hideIcon && (
+                                <Input placeholder={iconPlaceholder} value={formData.icon} onChange={e => setFormData({ ...formData, icon: e.target.value })} className="w-48" />
+                            )}
                         </div>
-                        <Textarea placeholder="Description/Content" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="h-20" />
+                        <Textarea placeholder={descriptionPlaceholder} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="h-20" />
                         <div className="flex justify-end gap-2 mt-2">
                             <Button variant="outline" size="sm" onClick={handleCancel}>Cancel</Button>
                             <Button size="sm" onClick={() => handleSave()} className="btn-gold">Save New</Button>
@@ -128,13 +146,30 @@ const AboutInfoTab = () => {
         <div className="space-y-12">
             <div className="flex justify-between items-center bg-muted p-4 rounded-xl">
                 <p className="text-sm text-muted-foreground">
-                    Edit the content that appears on the <strong>About Us</strong> page. Icon names should match Lucide React icons (e.g. `Users`, `Award`, `MapPin`).
+                    Manage the actual content shown on the <strong>About Us</strong> page layout. Adjust the Introduction paragraph, the list of Creators, and the Contact methods.
                 </p>
             </div>
 
-            <ContentSection type="about_stat" title="School Statistics" />
-            <ContentSection type="about_value" title="Core Values" />
-            <ContentSection type="about_contact" title="Contact Information" />
+            <ContentSection
+                type="about_intro"
+                title="Introduction Paragraph"
+                hideIcon
+                descriptionPlaceholder="Main paragraph text under the hero image"
+            />
+
+            <ContentSection
+                type="about_creator"
+                title="Meet the Creators"
+                iconPlaceholder="Image URL (e.g. /creators/name.jpg)"
+                descriptionPlaceholder="Role (e.g. Researcher)"
+            />
+
+            <ContentSection
+                type="about_contact"
+                title="Contact Information"
+                iconPlaceholder="Lucide Icon (e.g. MapPin, Phone, Mail)"
+                descriptionPlaceholder="Contact details (Address, Phone number, Email)"
+            />
         </div>
     );
 };
