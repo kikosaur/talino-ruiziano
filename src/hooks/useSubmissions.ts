@@ -111,7 +111,11 @@ export const useSubmissions = (isTeacherView = false) => {
         .from("submissions")
         .getPublicUrl(fileName);
 
-      // Create submission record
+      // Get current badges BEFORE insertion to find the difference
+      const { data: beforeBadges } = await supabase.from('user_badges').select('badge_id').eq('user_id', user.id);
+      const beforeBadgeIds = new Set(beforeBadges?.map(b => b.badge_id) || []);
+
+      // Create submission record (this automatically triggers the secure backend to award points & badges)
       const { error: insertError } = await supabase.from("submissions").insert({
         user_id: user.id,
         ilt_name: iltName,
@@ -124,64 +128,17 @@ export const useSubmissions = (isTeacherView = false) => {
 
       if (insertError) throw insertError;
 
-      // Update user's total points
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("total_points")
-        .eq("user_id", user.id)
-        .single();
+      // Fetch badges AFTER insertion to detect newly awarded ones
+      const { data: afterBadges } = await supabase.from('user_badges').select('badge_id, badges(name)').eq('user_id', user.id);
 
-      if (profile) {
-        await supabase
-          .from("profiles")
-          .update({ total_points: profile.total_points + dynamicPoints })
-          .eq("user_id", user.id);
+      const newBadges = (afterBadges || []).filter(b => !beforeBadgeIds.has(b.badge_id));
 
-        // --- Advanced Badge Check Logic ---
-        const newPoints = profile.total_points + dynamicPoints;
-
-        // 1. Fetch data for advanced checks
-        const { data: allBadges } = await supabase.from('badges').select('*');
-        const { data: userBadges } = await supabase.from('user_badges').select('badge_id').eq('user_id', user.id);
-        const { data: deadlineData } = await supabase.from('ilt_deadlines').select('deadline').eq('name', iltName).single();
-        const { data: currentProfile } = await supabase.from('profiles').select('streak_days').eq('user_id', user.id).single();
-
-        const earnedBadgeIds = new Set(userBadges?.map(b => b.badge_id));
-        const now = new Date();
-        const isWeekend = now.getDay() === 0 || now.getDay() === 6;
-        const daysToDeadline = deadlineData ? Math.floor((new Date(deadlineData.deadline).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;
-
-        const newBadges = allBadges?.filter(badge => {
-          if (earnedBadgeIds.has(badge.id)) return false;
-
-          let earned = false;
-
-          // Basic thresholds
-          if (badge.required_points && newPoints >= badge.required_points) earned = true;
-
-          // Advanced logic based on badge names (as identifiers)
-          if (badge.name === 'Early Bird' && daysToDeadline !== null && daysToDeadline >= 3) earned = true;
-          if (badge.name === 'Weekend Warrior' && isWeekend) earned = true;
-          if (badge.name === 'On Fire' && currentProfile && currentProfile.streak_days >= 7) earned = true;
-          if (badge.name === 'Scholar' && newPoints >= 1000) earned = true;
-
-          return earned;
-        }) || [];
-
-        for (const badge of newBadges) {
-          const { error: badgeError } = await supabase.from('user_badges').insert({
-            user_id: user.id,
-            badge_id: badge.id
-          });
-
-          if (!badgeError) {
-            toast({
-              title: "New Badge Unlocked! 🏅",
-              description: `You earned the "${badge.name}" badge!`,
-              className: "bg-primary text-primary-foreground border-primary shadow-[var(--shadow-gold)]"
-            });
-          }
-        }
+      for (const badgeData of newBadges) {
+        toast({
+          title: "New Badge Unlocked! 🏅",
+          description: `You earned the "${(badgeData as any).badges?.name || 'New'}" badge!`,
+          className: "bg-primary text-primary-foreground border-primary shadow-[var(--shadow-gold)]"
+        });
       }
 
       // Refresh submissions list

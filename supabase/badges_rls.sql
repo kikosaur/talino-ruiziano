@@ -7,7 +7,12 @@ CREATE POLICY "Public read access for badges" ON public.badges
     FOR SELECT USING (true);
 
 -- Policy for teachers to insert, update, delete badges. 
--- Assuming simple authenticated role check for now, matching app_settings. 
 DROP POLICY IF EXISTS "Teachers can manage badges" ON public.badges;
 CREATE POLICY "Teachers can manage badges" ON public.badges
-    FOR ALL USING (auth.role() = 'authenticated');
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM public.user_roles 
+            WHERE user_roles.user_id = auth.uid() 
+            AND user_roles.role = 'teacher'
+        )
+    );
