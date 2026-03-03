@@ -50,32 +50,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const fetchProfile = async (userId: string) => {
     try {
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", userId)
-        .maybeSingle();
+      // Run both queries concurrently to reduce loading time
+      const [profileResponse, roleResponse] = await Promise.all([
+        supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle()
+      ]);
 
-      if (profileError) {
-        console.error("Error fetching profile:", profileError);
+      if (profileResponse.error) {
+        console.error("Error fetching profile:", profileResponse.error);
         return;
       }
 
-      setProfile(profileData);
+      setProfile(profileResponse.data);
 
-      // Check if user is teacher
-      const { data: roleData, error: roleError } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (roleError) {
-        console.error("Error fetching role:", roleError);
+      if (roleResponse.error) {
+        console.error("Error fetching role:", roleResponse.error);
         return;
       }
 
-      setIsTeacher(roleData?.role === "teacher");
+      setIsTeacher(roleResponse.data?.role === "teacher");
     } catch (error) {
       console.error("Error in fetchProfile:", error);
     }
