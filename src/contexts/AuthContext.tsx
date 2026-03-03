@@ -82,53 +82,45 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   useEffect(() => {
     let mounted = true;
+    let isInitialized = false;
 
-    async function initializeAuth() {
-      try {
-        const { data: { session: existingSession }, error } = await supabase.auth.getSession();
-
-        if (error) throw error;
-
-        if (existingSession?.user && mounted) {
-          setSession(existingSession);
-          setUser(existingSession.user);
-          await fetchProfile(existingSession.user.id);
-        }
-      } catch (error) {
-        console.error("Error during auth initialization:", error);
-      } finally {
+    const resolveAuth = async (currentSession: Session | null) => {
+      if (currentSession?.user) {
+        await fetchProfile(currentSession.user.id);
+      } else {
         if (mounted) {
-          setIsLoading(false);
+          setProfile(null);
+          setIsTeacher(false);
         }
       }
-    }
 
-    // Call initialization first
-    initializeAuth();
+      if (mounted) {
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        setIsLoading(false);
+        isInitialized = true;
+      }
+    };
 
-    // Listen for auth state changes
+    // 1. Fetch initial session explicitly as a fallback
+    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+      if (mounted && !isInitialized) {
+        resolveAuth(existingSession);
+      }
+    });
+
+    // 2. Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
         if (!mounted) return;
 
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          if (currentSession?.user) {
-            // We keep isLoading true if it's the initial load, 
-            // but we don't need to force it true for a background token refresh.
-            await fetchProfile(currentSession.user.id);
-          }
+        if (event === 'INITIAL_SESSION') {
+          resolveAuth(currentSession);
+        } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          resolveAuth(currentSession);
         } else if (event === 'SIGNED_OUT') {
-          setProfile(null);
-          setIsTeacher(false);
-          setSession(null);
-          setUser(null);
+          resolveAuth(null);
         }
-
-        // Only flip loading to false if this event finishes after an ongoing initialization
-        // Most of the time, the initializeAuth() call handles the initial loading state flip.
       }
     );
 
