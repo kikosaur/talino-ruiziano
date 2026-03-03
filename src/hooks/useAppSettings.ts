@@ -12,6 +12,7 @@ export interface AppSettings {
     semester: string;
     allow_late_submissions: boolean;
     maintenance_mode: boolean;
+    itl_submission_points: number;
     updated_at: string;
 }
 
@@ -24,7 +25,8 @@ export const useAppSettings = () => {
     const fetchSettings = useCallback(async () => {
         try {
             setIsLoading(true);
-            const { data, error } = await (supabase.from("app_settings") as any)
+            const { data, error } = await (supabase as any)
+                .from("app_settings")
                 .select("*")
                 .single();
 
@@ -60,7 +62,7 @@ export const useAppSettings = () => {
             }
 
             try {
-                const { error } = await supabase
+                const { error } = await (supabase as any)
                     .from("app_settings")
                     .update({
                         ...updates,

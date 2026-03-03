@@ -1,0 +1,385 @@
+The Lovable Database for talino-ruiziano has
+
+table name: badges
+- id
+- name
+- description
+- icon
+- required_points
+- required_submissions
+- created_at
+
+Policy 1
+
+Name: Anyone can view badges
+Command: SELECT
+Target: authenticated
+Expression: USING true
+
+Policy 2
+
+Name: Admins can manage badges
+Command: ALL
+Target: authenticated
+Expression: USING has_role(auth.uid(), 'admin'::app_role)
+
+
+table name: ilt_deadlines
+- id
+- name
+- subject
+- description
+- deadline
+- created_at
+- updated_at
+- is_archived
+
+Policy 1
+
+Name: Anyone can view deadlines
+Command: SELECT
+Target: public
+Expression: USING true
+
+Policy 2
+
+Name: Only teachers can manage deadlines
+Command: ALL
+Target: public
+Expression: USING (EXISTS ( SELECT 1 FROM user_roles WHERE ((user_roles.user_id = auth.uid()) AND (user_roles.role = 'teacher'::app_role))))
+
+table name: messages
+- id
+- user_id
+- content
+- created_at
+- recipent_id
+
+Policy 1
+
+Name: Users can insert their own messages
+Command: INSERT
+Target: authenticated
+Expression: CHECK (auth.uid() = user_id)
+
+Policy 2
+
+Name: Users can view relevant messages
+Command: SELECT
+Target: public
+Expression: USING ((recipient_id IS NULL) OR (auth.uid() = user_id) OR (auth.uid() = recipient_id))
+
+Policy 3
+
+Name: Authenticated users can send messages
+Command: INSERT
+Target: public
+Expression: CHECK (auth.uid() = user_id)
+
+table name: music_library
+- id
+- title
+- artist
+- url
+- created_by
+- created_at
+
+Policy 1: Authenticated users can view music library
+
+Command: SELECT
+Applies to: public
+Expression: USING (auth.role() = 'authenticated'::text)
+
+Policy 2: Teachers can add to music library
+
+Command: INSERT
+Applies to: public
+Expression: CHECK (EXISTS ( SELECT 1 FROM user_roles WHERE ((user_roles.user_id = auth.uid()) AND (user_roles.role = ANY (ARRAY['teacher'::app_role, 'admin'::app_role])))))
+
+Policy 3: Teachers can delete from music library
+
+Command: DELETE
+Applies to: public
+Expression: USING (EXISTS ( SELECT 1 FROM user_roles WHERE ((user_roles.user_id = auth.uid()) AND (user_roles.role = ANY (ARRAY['teacher'::app_role, 'admin'::app_role])))))
+
+table name: profiles
+- id
+- user_id
+- email
+- display_name
+- avatar_url
+- total_points
+- streak_days
+- level
+- created_at
+- updated_at
+- total_time_spent_seconds
+- last_active_at
+- session_count
+
+Policy 1
+
+Name: Admins can view all profiles
+Command: SELECT
+Target: authenticated
+Expression: USING has_role(auth.uid(), 'admin'::app_role)
+
+Policy 2
+
+Name: Teachers can view all profiles
+Command: SELECT
+Target: authenticated
+Expression: USING is_teacher()
+
+Policy 3
+
+Name: Users can view their own profile
+Command: SELECT
+Target: authenticated
+Expression: USING (auth.uid() = user_id)
+
+Policy 4
+
+Name: Users can update their own profile
+Command: UPDATE
+Target: authenticated
+Expression: USING (auth.uid() = user_id)
+
+Policy 5
+
+Name: Authenticated users can view all profiles for chat
+Command: SELECT
+Target: public
+Expression: USING (auth.role() = 'authenticated'::text)
+
+table name: session_logs
+- id
+- user_id
+- session_start
+- session_end
+- duration_seconds
+- page_views
+- created_at
+
+Policy 1: Admins can view all sessions
+
+Command: SELECT
+Applies to: public
+Expression: USING (EXISTS ( SELECT 1 FROM user_roles WHERE ((user_roles.user_id = auth.uid()) AND (user_roles.role = 'teacher'::app_role))))
+
+Policy 2: Users can view own sessions
+
+Command: SELECT
+Applies to: public
+Expression: USING (auth.uid() = user_id)
+
+Policy 3: Users can create own sessions
+
+Command: INSERT
+Applies to: public
+Expression: CHECK (auth.uid() = user_id)
+
+Policy 4: Users can update own sessions
+
+Command: UPDATE
+Applies to: public
+Expression: USING (auth.uid() = user_id)
+
+table name: submissions
+- id
+- user_id
+- ilt_name
+- file_name
+- file_type
+- file_size
+- file_url
+- status
+- points_awarded
+- grade
+- submitted_at
+- updated_at
+
+Policy 1
+
+Name: Admins can view all submissions
+Command: SELECT
+Target: authenticated
+Expression: USING has_role(auth.uid(), 'admin'::app_role)
+
+Policy 2
+
+Name: Teachers can view all submissions
+Command: SELECT
+Target: authenticated
+Expression: USING (EXISTS ( SELECT 1 FROM user_roles WHERE ((user_roles.user_id = auth.uid()) AND (user_roles.role = 'teacher'::app_role))))
+
+Policy 3
+
+Name: Users can view their own submissions
+Command: SELECT
+Target: authenticated
+Expression: USING (auth.uid() = user_id)
+
+Policy 4 & 5 (Duplicate logic)
+
+Name: Users can create/insert their own submissions
+Command: INSERT
+Target: authenticated
+Expression: CHECK (auth.uid() = user_id)
+
+Policy 6
+
+Name: Admins can update all submissions
+Command: UPDATE
+Target: authenticated
+Expression: USING has_role(auth.uid(), 'admin'::app_role)
+
+Policy 7
+
+Name: Teachers can update submissions
+Command: UPDATE
+Target: authenticated
+Expression: USING (EXISTS ( SELECT 1 FROM user_roles WHERE ((user_roles.user_id = auth.uid()) AND (user_roles.role = 'teacher'::app_role))))
+
+Policy 8
+
+Name: Users can update their own submissions
+Command: UPDATE
+Target: authenticated
+Expression: USING (auth.uid() = user_id)
+
+table name: todos
+- id
+- user_id
+- title
+- is_completed
+- created_at
+
+Policy 1: Users can view their own todos
+
+Command: SELECT
+Applies to: public
+Expression: USING (auth.uid() = user_id)
+
+Policy 2: Users can insert their own todos
+
+Command: INSERT
+Applies to: public
+Expression: CHECK (auth.uid() = user_id)
+
+Policy 3: Users can update their own todos
+
+Command: UPDATE
+Applies to: public
+Expression: USING (auth.uid() = user_id)
+
+Policy 4: Users can delete their own todos
+
+Command: DELETE
+Applies to: public
+Expression: USING (auth.uid() = user_id)
+
+table name: usage_logs
+- id
+- user_id
+- action
+- details
+- created_at
+
+Policy 1: Authenticated users can view logs
+
+Command: SELECT
+Applies to: authenticated
+Expression: USING true
+
+Policy 2: Authenticated users can insert logs
+
+Command: INSERT
+Applies to: authenticated
+Expression: CHECK (auth.uid() = user_id)
+
+table name: user_badges
+- id
+- user_id
+- badge_id
+- earned_at
+
+Policy 1: Admins can view all user badges
+
+Command: SELECT
+Applies to: authenticated
+Expression: USING has_role(auth.uid(), 'admin'::app_role)
+
+Policy 2: Users can view their own badges
+
+Command: SELECT
+Applies to: authenticated
+Expression: USING (auth.uid() = user_id)
+
+Policy 3: Admins can manage user badges
+
+Command: ALL
+Applies to: authenticated
+Expression: USING has_role(auth.uid(), 'admin'::app_role)
+
+table name: user_playlists
+- id
+- user_id
+- title
+- artist
+- url
+- created_at
+
+Policy 1: Users can view own playlist
+
+Command: SELECT
+Applies to: public
+Expression: USING (auth.uid() = user_id)
+
+Policy 2: Users can add to own playlist
+
+Command: INSERT
+Applies to: public
+Expression: CHECK (auth.uid() = user_id)
+
+Policy 3: Users can remove from own playlist
+
+Command: DELETE
+Applies to: public
+Expression: USING (auth.uid() = user_id)
+
+table name: user_roles
+- id
+- user_id
+- role
+- created_at
+
+Policy 1: Admins can view all roles
+
+Command: SELECT
+Target: authenticated
+Expression: USING has_role(auth.uid(), 'admin'::app_role)
+
+Policy 2: Teachers can view all roles
+
+Command: SELECT
+Target: authenticated
+Expression: USING is_teacher()
+
+Policy 3 & 4: Users can view their own role/roles
+
+Command: SELECT
+Target: authenticated
+Expression: USING (auth.uid() = user_id)
+
+Policy 5: Admins can manage roles
+
+Command: ALL
+Target: authenticated
+Expression: USING has_role(auth.uid(), 'admin'::app_role)
+
+Policy 6: Authenticated users can view all user roles for chat
+
+Command: SELECT
+Target: public
+Expression: USING (auth.role() = 'authenticated'::text)

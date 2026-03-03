@@ -36,6 +36,8 @@ const SubmitILT = () => {
   const { deadlines } = useILTDeadlines();
   const { settings } = useAppSettings();
 
+  const dynamicPoints = settings?.itl_submission_points ?? 50;
+
   // Create a set of submitted ILT names for efficient lookup
   const submittedIltNames = new Set(submissions.map(s => s.ilt_name));
 
@@ -210,8 +212,8 @@ const SubmitILT = () => {
         isOpen={showSuccess}
         onClose={handleSuccessClose}
         fileName={uploadedFile?.file.name || ""}
-        pointsEarned={50}
-        newTotal={currentPoints + 50}
+        pointsEarned={dynamicPoints}
+        newTotal={currentPoints + dynamicPoints}
       />
 
       <main className="ml-0 md:ml-20 lg:ml-64 p-6 lg:p-8 transition-all duration-300">
@@ -220,7 +222,7 @@ const SubmitILT = () => {
           <div className="space-y-2">
             <h1 className="section-title text-3xl">Submit ILT</h1>
             <p className="text-muted-foreground text-lg">
-              Upload your Independent Learning Task and earn <span className="text-accent font-bold">+50 points</span>!
+              Upload your Independent Learning Task and earn <span className="text-accent font-bold">+{dynamicPoints} points</span>!
             </p>
           </div>
 
@@ -434,7 +436,7 @@ const SubmitILT = () => {
                   ) : (
                     <span className="flex items-center gap-2">
                       <Upload className="w-5 h-5" />
-                      Submit & Earn +50 Points
+                      Submit & Earn +{dynamicPoints} Points
                     </span>
                   )}
                 </Button>

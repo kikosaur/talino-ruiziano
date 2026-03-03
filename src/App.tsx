@@ -32,6 +32,8 @@ import Programs from "./pages/Programs";
 import About from "./pages/About";
 import Bulletin from "./pages/Bulletin";
 import NotFound from "./pages/NotFound";
+import AdminContent from "./pages/AdminContent";
+import AdminBadges from "./pages/AdminBadges";
 
 import MusicManager from "@/components/admin/MusicManager";
 
@@ -103,6 +105,8 @@ const App = () => (
               <Route path="settings" element={<AdminSettings />} />
               <Route path="guide" element={<AdminGuide />} />
               <Route path="music" element={<MusicManager />} />
+              <Route path="content" element={<AdminContent />} />
+              <Route path="badges" element={<AdminBadges />} />
             </Route>
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

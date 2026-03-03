@@ -1,5 +1,6 @@
 import { Upload, Calendar, CheckSquare, Music } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAppSettings } from "@/hooks/useAppSettings";
 
 const actions = [
   {
@@ -8,7 +9,7 @@ const actions = [
     description: "Upload your task",
     path: "/dashboard/submit",
     color: "bg-accent",
-    points: "+50 pts",
+    // We will inject the dynamic points inside the component
   },
   {
     icon: Calendar,
@@ -31,33 +32,40 @@ interface QuickActionsProps {
 }
 
 const QuickActions = ({ onMusicToggle }: QuickActionsProps) => {
+  const { settings } = useAppSettings();
+
   return (
     <div className="card-elevated p-6">
       <h3 className="section-title text-xl mb-6">Quick Actions</h3>
 
       <div className="grid grid-cols-2 gap-4">
-        {actions.map((action) => (
-          <Link
-            key={action.path}
-            to={action.path}
-            className="group p-4 rounded-xl border border-border hover:border-accent bg-card hover:bg-accent/5 transition-all duration-300 hover:scale-[1.02]"
-          >
-            <div className={`w-12 h-12 ${action.color} rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-lg`}>
-              <action.icon className="w-6 h-6 text-primary-foreground" />
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-semibold text-foreground">{action.label}</p>
-                <p className="text-sm text-muted-foreground">{action.description}</p>
+        {actions.map((action) => {
+          const isSubmitAction = action.label === "Submit ILT";
+          const dynamicPoints = settings?.itl_submission_points ?? 50;
+
+          return (
+            <Link
+              key={action.path}
+              to={action.path}
+              className="group p-4 rounded-xl border border-border hover:border-accent bg-card hover:bg-accent/5 transition-all duration-300 hover:scale-[1.02]"
+            >
+              <div className={`w-12 h-12 ${action.color} rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-lg`}>
+                <action.icon className="w-6 h-6 text-primary-foreground" />
               </div>
-              {action.points && (
-                <span className="text-xs font-bold text-accent bg-accent/20 px-2 py-1 rounded-full">
-                  {action.points}
-                </span>
-              )}
-            </div>
-          </Link>
-        ))}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-semibold text-foreground">{action.label}</p>
+                  <p className="text-sm text-muted-foreground">{action.description}</p>
+                </div>
+                {isSubmitAction && (
+                  <span className="text-xs font-bold text-accent bg-accent/20 px-2 py-1 rounded-full">
+                    +{dynamicPoints} pts
+                  </span>
+                )}
+              </div>
+            </Link>
+          );
+        })}
 
         {/* Study Music - Special button that toggles the music player */}
         <button

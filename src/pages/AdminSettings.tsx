@@ -32,7 +32,8 @@ const AdminSettings = () => {
         academic_year: "",
         semester: "",
         allow_late_submissions: true,
-        maintenance_mode: false
+        maintenance_mode: false,
+        itl_submission_points: 50
     });
 
     // Sync local state when settings load
@@ -45,7 +46,8 @@ const AdminSettings = () => {
                 academic_year: settings.academic_year,
                 semester: settings.semester,
                 allow_late_submissions: settings.allow_late_submissions,
-                maintenance_mode: settings.maintenance_mode
+                maintenance_mode: settings.maintenance_mode,
+                itl_submission_points: settings.itl_submission_points ?? 50
             });
         }
     }, [settings]);
@@ -175,6 +177,20 @@ const AdminSettings = () => {
                                         onCheckedChange={(c) => setFormData({ ...formData, allow_late_submissions: c })}
                                         className="data-[state=checked]:bg-accent"
                                     />
+                                </div>
+                                <div className="flex items-center justify-between space-x-2 border p-4 rounded-xl bg-muted/20 border-border/50">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-base font-bold text-foreground">ITL Submission Points</Label>
+                                        <p className="text-sm text-muted-foreground">The number of points awarded to a student upon submitting an Independent Learning Task.</p>
+                                    </div>
+                                    <div className="w-24">
+                                        <Input
+                                            type="number"
+                                            value={formData.itl_submission_points}
+                                            onChange={(e) => setFormData({ ...formData, itl_submission_points: Number(e.target.value) })}
+                                            className="input-warm text-center"
+                                        />
+                                    </div>
                                 </div>
                             </CardContent>
                             <CardFooter>

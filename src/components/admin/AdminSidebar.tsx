@@ -11,7 +11,8 @@ import {
   Calendar,
   MessageCircle,
   HelpCircle,
-  Music
+  Music,
+  Award
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -24,6 +25,8 @@ const menuItems = [
   { icon: Calendar, label: "Deadlines", path: "/admin/deadlines" },
   { icon: Users, label: "Students", path: "/admin/students" },
   { icon: Music, label: "Music Library", path: "/admin/music" },
+  { icon: LayoutDashboard, label: "Public Content", path: "/admin/content" },
+  { icon: Award, label: "Badges", path: "/admin/badges" },
   { icon: BarChart3, label: "Analytics", path: "/admin/analytics" },
   { icon: HelpCircle, label: "How to Use", path: "/admin/guide" },
   { icon: Settings, label: "Settings", path: "/admin/settings" },

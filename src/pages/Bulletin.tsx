@@ -12,68 +12,12 @@ import {
     BookOpen,
     Users,
     AlertCircle,
+    Loader2
 } from "lucide-react";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import { cn } from "@/lib/utils";
-
-// Sample bulletin data
-const bulletinItems = [
-    {
-        id: 1,
-        title: "Enrollment for SY 2026-2027 Now Open",
-        content: "We are excited to announce that enrollment for the upcoming school year is now open. Early bird registrants will receive a 10% discount on tuition fees. Visit the registrar's office or enroll online through our student portal.",
-        category: "Announcement",
-        date: new Date(2026, 0, 28),
-        pinned: true,
-        icon: "📢",
-    },
-    {
-        id: 2,
-        title: "Congratulations to Our Math Olympiad Winners!",
-        content: "Our students brought home 3 gold, 5 silver, and 7 bronze medals from the Regional Mathematics Olympiad. Special recognition goes to Juan Dela Cruz for placing 1st overall. Way to go, Ruizianos!",
-        category: "Achievement",
-        date: new Date(2026, 0, 25),
-        pinned: true,
-        icon: "🏆",
-    },
-    {
-        id: 3,
-        title: "ILT Week 4 Submission Deadline Reminder",
-        content: "This is a reminder that ILT Week 4: Data Collection assignments are due on February 5, 2026. Please submit your work through the Talino-Ruiziano portal. Late submissions will incur a 10-point deduction.",
-        category: "Academic",
-        date: new Date(2026, 0, 27),
-        pinned: false,
-        icon: "📚",
-    },
-    {
-        id: 4,
-        title: "Foundation Week Activities Schedule",
-        content: "Join us for Foundation Week from February 10-14, 2026! Activities include: Quiz Bee, Sports Fest, Talent Show, and the Foundation Day Program. Sign-ups are now open at the Student Affairs Office.",
-        category: "Event",
-        date: new Date(2026, 0, 20),
-        pinned: false,
-        icon: "🎉",
-    },
-    {
-        id: 5,
-        title: "Parent-Teacher Conference Schedule",
-        content: "The 2nd Quarter Parent-Teacher Conference will be held on February 8, 2026 from 8:00 AM to 5:00 PM. Parents are encouraged to meet with their child's advisers to discuss academic progress.",
-        category: "Event",
-        date: new Date(2026, 0, 18),
-        pinned: false,
-        icon: "👨‍👩‍👧",
-    },
-    {
-        id: 6,
-        title: "Library Extended Hours During Exam Week",
-        content: "The school library will extend its operating hours from 6:00 AM to 10:00 PM during exam week (February 17-21). Take advantage of the quiet study environment and available resources.",
-        category: "Announcement",
-        date: new Date(2026, 0, 15),
-        pinned: false,
-        icon: "📖",
-    },
-];
+import { usePublicContent } from "@/hooks/usePublicContent";
 
 const categories = [
     { name: "All", icon: Megaphone, color: "bg-accent" },
@@ -84,18 +28,27 @@ const categories = [
 ];
 
 const Bulletin = () => {
-    const [selectedCategory, setSelectedCategory] = useState("All");
-    const [expandedId, setExpandedId] = useState<number | null>(null);
+    const { data: bulletins, isLoading, error } = usePublicContent("bulletin");
 
-    const filteredItems = bulletinItems.filter(
-        (item) => selectedCategory === "All" || item.category === selectedCategory
+    const [selectedCategory, setSelectedCategory] = useState("All");
+    const [expandedId, setExpandedId] = useState<string | null>(null);
+
+    const filteredItems = (bulletins || []).filter(
+        (item) => selectedCategory === "All" || item.metadata?.category === selectedCategory
     );
 
-    // Sort: pinned first, then by date
+    // Sort: pinned first, then by date descendant
     const sortedItems = [...filteredItems].sort((a, b) => {
-        if (a.pinned && !b.pinned) return -1;
-        if (!a.pinned && b.pinned) return 1;
-        return b.date.getTime() - a.date.getTime();
+        const aPinned = a.metadata?.pinned;
+        const bPinned = b.metadata?.pinned;
+
+        if (aPinned && !bPinned) return -1;
+        if (!aPinned && bPinned) return 1;
+
+        const aDate = a.metadata?.date ? new Date(a.metadata.date).getTime() : 0;
+        const bDate = b.metadata?.date ? new Date(b.metadata.date).getTime() : 0;
+
+        return bDate - aDate;
     });
 
     return (
@@ -154,7 +107,18 @@ const Bulletin = () => {
             {/* Bulletin Items */}
             <section className="py-12">
                 <div className="container mx-auto px-4">
-                    {sortedItems.length === 0 ? (
+                    {isLoading ? (
+                        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+                            <Loader2 className="w-12 h-12 animate-spin mb-4 text-accent" />
+                            <p>Loading bulletins...</p>
+                        </div>
+                    ) : error ? (
+                        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground bg-muted/30 rounded-2xl">
+                            <AlertCircle className="w-12 h-12 mb-4 text-muted-foreground/50" />
+                            <p className="text-lg">Failed to load bulletins.</p>
+                            <p className="text-sm">Please try again later.</p>
+                        </div>
+                    ) : sortedItems.length === 0 ? (
                         <div className="text-center py-16">
                             <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                             <p className="text-muted-foreground">No bulletins in this category</p>
@@ -166,7 +130,7 @@ const Bulletin = () => {
                                     key={item.id}
                                     className={cn(
                                         "card-elevated p-6 transition-all cursor-pointer",
-                                        item.pinned && "border-l-4 border-l-accent",
+                                        item.metadata?.pinned && "border-l-4 border-l-accent",
                                         expandedId === item.id && "ring-2 ring-accent"
                                     )}
                                     onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
@@ -174,7 +138,7 @@ const Bulletin = () => {
                                     <div className="flex items-start gap-4">
                                         {/* Icon */}
                                         <div className="w-12 h-12 bg-muted rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
-                                            {item.icon}
+                                            {item.metadata?.icon || "📢"}
                                         </div>
 
                                         {/* Content */}
@@ -182,7 +146,7 @@ const Bulletin = () => {
                                             <div className="flex items-start justify-between gap-4">
                                                 <div>
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        {item.pinned && (
+                                                        {item.metadata?.pinned && (
                                                             <span className="text-xs font-semibold bg-accent/20 text-accent px-2 py-0.5 rounded-full">
                                                                 📌 Pinned
                                                             </span>
@@ -190,14 +154,15 @@ const Bulletin = () => {
                                                         <span
                                                             className={cn(
                                                                 "text-xs font-medium px-2 py-0.5 rounded-full",
-                                                                item.category === "Announcement" && "bg-blue-500/20 text-blue-600",
-                                                                item.category === "Achievement" && "bg-yellow-500/20 text-yellow-600",
-                                                                item.category === "Academic" && "bg-green-500/20 text-green-600",
-                                                                item.category === "Event" && "bg-purple-500/20 text-purple-600"
+                                                                item.metadata?.category === "Announcement" && "bg-blue-500/20 text-blue-600",
+                                                                item.metadata?.category === "Achievement" && "bg-yellow-500/20 text-yellow-600",
+                                                                item.metadata?.category === "Academic" && "bg-green-500/20 text-green-600",
+                                                                item.metadata?.category === "Event" && "bg-purple-500/20 text-purple-600",
+                                                                !item.metadata?.category && "bg-gray-500/20 text-gray-600"
                                                             )}
                                                         >
                                                             <Tag className="w-3 h-3 inline mr-1" />
-                                                            {item.category}
+                                                            {item.metadata?.category || "Notice"}
                                                         </span>
                                                     </div>
                                                     <h3 className="font-serif font-bold text-lg text-foreground">
@@ -215,13 +180,13 @@ const Bulletin = () => {
                                             {/* Date */}
                                             <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
                                                 <Calendar className="w-3 h-3" />
-                                                {format(item.date, "MMMM d, yyyy")}
+                                                {item.metadata?.date ? format(new Date(item.metadata.date), "MMMM d, yyyy") : 'No Date Supplied'}
                                             </div>
 
                                             {/* Expanded Content */}
                                             {expandedId === item.id && (
-                                                <p className="text-muted-foreground mt-4 leading-relaxed animate-in fade-in slide-in-from-top-2">
-                                                    {item.content}
+                                                <p className="text-muted-foreground mt-4 leading-relaxed animate-in fade-in slide-in-from-top-2 whitespace-pre-wrap">
+                                                    {item.description}
                                                 </p>
                                             )}
                                         </div>

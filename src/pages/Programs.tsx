@@ -1,67 +1,13 @@
 import { Link } from "react-router-dom";
-import { BookOpen, GraduationCap, Clock, Users, ArrowLeft, Star } from "lucide-react";
+import { BookOpen, GraduationCap, Clock, Users, ArrowLeft, Star, Loader2, AlertCircle } from "lucide-react";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import { Button } from "@/components/ui/button";
-
-const programs = [
-    {
-        id: 1,
-        name: "Junior High School",
-        description: "Comprehensive curriculum for grades 7-10, building strong academic foundations.",
-        duration: "4 Years",
-        students: "500+",
-        icon: "📚",
-        courses: ["Mathematics", "Science", "English", "Filipino", "Social Studies", "TLE", "MAPEH"],
-    },
-    {
-        id: 2,
-        name: "Senior High School - STEM",
-        description: "Science, Technology, Engineering, and Mathematics track for future innovators.",
-        duration: "2 Years",
-        students: "200+",
-        icon: "🔬",
-        courses: ["General Physics", "General Chemistry", "Pre-Calculus", "Basic Calculus", "Research"],
-    },
-    {
-        id: 3,
-        name: "Senior High School - ABM",
-        description: "Accountancy, Business, and Management track for future business leaders.",
-        duration: "2 Years",
-        students: "180+",
-        icon: "💼",
-        courses: ["Business Math", "Accounting", "Business Finance", "Marketing", "Entrepreneurship"],
-    },
-    {
-        id: 4,
-        name: "Senior High School - HUMSS",
-        description: "Humanities and Social Sciences track for future educators and public servants.",
-        duration: "2 Years",
-        students: "150+",
-        icon: "📖",
-        courses: ["Creative Writing", "Philippine Politics", "Community Engagement", "Social Science"],
-    },
-    {
-        id: 5,
-        name: "Senior High School - GAS",
-        description: "General Academic Strand for students exploring various career paths.",
-        duration: "2 Years",
-        students: "120+",
-        icon: "🎯",
-        courses: ["Humanities", "Social Sciences", "Applied Economics", "Organization & Management"],
-    },
-    {
-        id: 6,
-        name: "Senior High School - TVL",
-        description: "Technical-Vocational-Livelihood track for hands-on career preparation.",
-        duration: "2 Years",
-        students: "100+",
-        icon: "🛠️",
-        courses: ["Computer Systems Servicing", "Cookery", "Electrical Installation", "Welding"],
-    },
-];
+import { usePublicContent } from "@/hooks/usePublicContent";
 
 const Programs = () => {
+    const { data: programs, isLoading, error } = usePublicContent("program");
+
     return (
         <div className="min-h-screen bg-background">
             <Navbar />
@@ -95,63 +41,76 @@ const Programs = () => {
             {/* Programs Grid */}
             <section className="py-16">
                 <div className="container mx-auto px-4">
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {programs.map((program) => (
-                            <div
-                                key={program.id}
-                                className="card-elevated p-6 hover:scale-[1.02] transition-transform group"
-                            >
-                                {/* Header */}
-                                <div className="flex items-start gap-4 mb-4">
-                                    <div className="w-14 h-14 bg-accent/20 rounded-xl flex items-center justify-center text-3xl flex-shrink-0">
-                                        {program.icon}
+                    {isLoading ? (
+                        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+                            <Loader2 className="w-12 h-12 animate-spin mb-4 text-accent" />
+                            <p>Loading programs...</p>
+                        </div>
+                    ) : error || !programs || programs.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground bg-muted/30 rounded-2xl">
+                            <AlertCircle className="w-12 h-12 mb-4 text-muted-foreground/50" />
+                            <p className="text-lg">No programs found.</p>
+                            <p className="text-sm">Please check back later or contact administration.</p>
+                        </div>
+                    ) : (
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {programs.map((program) => (
+                                <div
+                                    key={program.id}
+                                    className="card-elevated p-6 hover:scale-[1.02] transition-transform group flex flex-col"
+                                >
+                                    {/* Header */}
+                                    <div className="flex items-start gap-4 mb-4">
+                                        <div className="w-14 h-14 bg-accent/20 rounded-xl flex items-center justify-center text-3xl flex-shrink-0">
+                                            {program.metadata?.icon || '📚'}
+                                        </div>
+                                        <div>
+                                            <h3 className="font-serif font-bold text-xl text-foreground group-hover:text-accent transition-colors">
+                                                {program.title}
+                                            </h3>
+                                            <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
+                                                <span className="flex items-center gap-1">
+                                                    <Clock className="w-3 h-3" />
+                                                    {program.metadata?.duration || 'Unknown duration'}
+                                                </span>
+                                                <span className="flex items-center gap-1">
+                                                    <Users className="w-3 h-3" />
+                                                    {program.metadata?.students || '0'} students
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="font-serif font-bold text-xl text-foreground group-hover:text-accent transition-colors">
-                                            {program.name}
-                                        </h3>
-                                        <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
-                                            <span className="flex items-center gap-1">
-                                                <Clock className="w-3 h-3" />
-                                                {program.duration}
-                                            </span>
-                                            <span className="flex items-center gap-1">
-                                                <Users className="w-3 h-3" />
-                                                {program.students}
-                                            </span>
+
+                                    {/* Description */}
+                                    <p className="text-muted-foreground text-sm mb-4">
+                                        {program.description}
+                                    </p>
+
+                                    {/* Courses */}
+                                    <div className="space-y-2 mt-auto pt-4">
+                                        <p className="text-xs font-semibold text-foreground uppercase tracking-wide">
+                                            Key Subjects
+                                        </p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {(program.metadata?.courses || []).slice(0, 4).map((course: string, i: number) => (
+                                                <span
+                                                    key={i}
+                                                    className="text-xs bg-muted px-2 py-1 rounded-lg text-muted-foreground"
+                                                >
+                                                    {course}
+                                                </span>
+                                            ))}
+                                            {(program.metadata?.courses?.length || 0) > 4 && (
+                                                <span className="text-xs bg-accent/20 px-2 py-1 rounded-lg text-accent">
+                                                    +{(program.metadata.courses.length) - 4} more
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
-
-                                {/* Description */}
-                                <p className="text-muted-foreground text-sm mb-4">
-                                    {program.description}
-                                </p>
-
-                                {/* Courses */}
-                                <div className="space-y-2">
-                                    <p className="text-xs font-semibold text-foreground uppercase tracking-wide">
-                                        Key Subjects
-                                    </p>
-                                    <div className="flex flex-wrap gap-2">
-                                        {program.courses.slice(0, 4).map((course, i) => (
-                                            <span
-                                                key={i}
-                                                className="text-xs bg-muted px-2 py-1 rounded-lg text-muted-foreground"
-                                            >
-                                                {course}
-                                            </span>
-                                        ))}
-                                        {program.courses.length > 4 && (
-                                            <span className="text-xs bg-accent/20 px-2 py-1 rounded-lg text-accent">
-                                                +{program.courses.length - 4} more
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </section>
 

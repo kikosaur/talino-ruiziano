@@ -85,6 +85,17 @@ export const useSubmissions = (isTeacherView = false) => {
     if (!user) return { success: false, error: "Not authenticated" };
 
     try {
+      // Fetch the configured points for ITL submission
+      let dynamicPoints = 50; // Fallback
+      const { data: settingsData } = await (supabase as any)
+        .from("app_settings")
+        .select("itl_submission_points")
+        .single();
+
+      if (settingsData && settingsData.itl_submission_points !== undefined) {
+        dynamicPoints = settingsData.itl_submission_points;
+      }
+
       // Upload file to storage
       const fileExt = file.name.split(".").pop();
       const fileName = `${user.id}/${Date.now()}_${file.name}`;
@@ -108,7 +119,7 @@ export const useSubmissions = (isTeacherView = false) => {
         file_type: file.type,
         file_size: file.size,
         file_url: urlData.publicUrl,
-        points_awarded: 50,
+        points_awarded: dynamicPoints,
       });
 
       if (insertError) throw insertError;
@@ -123,11 +134,11 @@ export const useSubmissions = (isTeacherView = false) => {
       if (profile) {
         await supabase
           .from("profiles")
-          .update({ total_points: profile.total_points + 50 })
+          .update({ total_points: profile.total_points + dynamicPoints })
           .eq("user_id", user.id);
 
         // --- Advanced Badge Check Logic ---
-        const newPoints = profile.total_points + 50;
+        const newPoints = profile.total_points + dynamicPoints;
 
         // 1. Fetch data for advanced checks
         const { data: allBadges } = await supabase.from('badges').select('*');
