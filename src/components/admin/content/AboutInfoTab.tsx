@@ -81,10 +81,10 @@ const ContentSection = ({ type, title, hideIcon = false, iconPlaceholder = "Icon
                     <div key={item.id} className="card-elevated p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                         {editingId === item.id ? (
                             <div className="flex-1 w-full grid gap-2">
-                                <div className="flex gap-2">
+                                <div className="flex flex-col sm:flex-row gap-2">
                                     <Input placeholder="Title (e.g. Name/Header)" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="flex-1" />
                                     {!hideIcon && (
-                                        <Input placeholder={iconPlaceholder} value={formData.icon} onChange={e => setFormData({ ...formData, icon: e.target.value })} className="w-48" />
+                                        <Input placeholder={iconPlaceholder} value={formData.icon} onChange={e => setFormData({ ...formData, icon: e.target.value })} className="w-full sm:w-48" />
                                     )}
                                 </div>
                                 <Textarea placeholder={descriptionPlaceholder} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="h-20" />
@@ -119,10 +119,10 @@ const ContentSection = ({ type, title, hideIcon = false, iconPlaceholder = "Icon
 
                 {editingId === 'new' ? (
                     <div className="card-elevated p-4 grid gap-2 border-2 border-accent border-dashed">
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                             <Input placeholder="Title (e.g. Name/Header)" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="flex-1" />
                             {!hideIcon && (
-                                <Input placeholder={iconPlaceholder} value={formData.icon} onChange={e => setFormData({ ...formData, icon: e.target.value })} className="w-48" />
+                                <Input placeholder={iconPlaceholder} value={formData.icon} onChange={e => setFormData({ ...formData, icon: e.target.value })} className="w-full sm:w-48" />
                             )}
                         </div>
                         <Textarea placeholder={descriptionPlaceholder} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="h-20" />

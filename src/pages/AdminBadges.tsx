@@ -185,18 +185,20 @@ const AdminBadges = () => {
                     </DialogHeader>
 
                     <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="icon" className="text-right font-medium">
+                        <div className="grid gap-2">
+                            <Label htmlFor="icon" className="font-medium">
                                 Icon
                             </Label>
-                            <Input
-                                id="icon"
-                                value={formData.icon}
-                                onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                                className="col-span-1 text-center"
-                                placeholder="🏅"
-                            />
-                            <p className="col-span-2 text-xs text-muted-foreground">Use an emoji (e.g. 🏆, 🌟, 🚀)</p>
+                            <div className="flex items-center gap-4">
+                                <Input
+                                    id="icon"
+                                    value={formData.icon}
+                                    onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+                                    className="w-16 text-center text-xl"
+                                    placeholder="🏅"
+                                />
+                                <p className="text-xs text-muted-foreground">Use an emoji (e.g. 🏆, 🌟, 🚀)</p>
+                            </div>
                         </div>
 
                         <div className="grid gap-2">
