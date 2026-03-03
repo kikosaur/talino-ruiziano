@@ -88,39 +88,59 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    let mounted = true;
+
+    async function initializeAuth() {
+      try {
+        const { data: { session: existingSession }, error } = await supabase.auth.getSession();
+
+        if (error) throw error;
+
+        if (existingSession?.user && mounted) {
+          setSession(existingSession);
+          setUser(existingSession.user);
+          await fetchProfile(existingSession.user.id);
+        }
+      } catch (error) {
+        console.error("Error during auth initialization:", error);
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    // Call initialization first
+    initializeAuth();
+
+    // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
+        if (!mounted) return;
+
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
 
-        if (currentSession?.user) {
-          // Defer profile fetch to avoid blocking
-          setTimeout(() => {
-            fetchProfile(currentSession.user.id);
-          }, 0);
-        } else {
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          if (currentSession?.user) {
+            // We keep isLoading true if it's the initial load, 
+            // but we don't need to force it true for a background token refresh.
+            await fetchProfile(currentSession.user.id);
+          }
+        } else if (event === 'SIGNED_OUT') {
           setProfile(null);
           setIsTeacher(false);
+          setSession(null);
+          setUser(null);
         }
 
-        setIsLoading(false);
+        // Only flip loading to false if this event finishes after an ongoing initialization
+        // Most of the time, the initializeAuth() call handles the initial loading state flip.
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
-      setSession(existingSession);
-      setUser(existingSession?.user ?? null);
-
-      if (existingSession?.user) {
-        fetchProfile(existingSession.user.id);
-      }
-
-      setIsLoading(false);
-    });
-
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
