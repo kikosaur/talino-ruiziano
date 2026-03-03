@@ -14,14 +14,18 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signIn, user } = useAuth();
+  const { signIn, user, isTeacher } = useAuth();
 
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      navigate("/dashboard");
+      if (isTeacher) {
+        navigate("/admin");
+      } else {
+        navigate("/dashboard");
+      }
     }
-  }, [user, navigate]);
+  }, [user, isTeacher, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,7 +75,8 @@ const Login = () => {
       }
 
       // Navigate based on role
-      if (roleData?.role === "teacher") {
+      const role = roleData?.role as string;
+      if (role === "teacher" || role === "admin") {
         navigate("/admin");
       } else {
         navigate("/dashboard");

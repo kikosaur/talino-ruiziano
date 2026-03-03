@@ -68,7 +68,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return;
       }
 
-      setIsTeacher(roleResponse.data?.role === "teacher");
+      const role = roleResponse.data?.role as string;
+      setIsTeacher(role === "teacher" || role === "admin");
     } catch (error) {
       console.error("Error in fetchProfile:", error);
     }
